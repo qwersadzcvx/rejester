@@ -142,7 +142,7 @@
     .card-seq {
       font-family: 'JetBrains Mono', monospace;
       font-size: 10px; color: var(--text-dim);
-      min-width: 20px; padding-top: 3px; text-align: right;
+      min-width: 24px; padding-top: 3px; text-align: right;
     }
     .card-body { flex: 1; min-width: 0; }
     .card-top {
@@ -208,7 +208,7 @@
 <body>
 
   <header class="header">
-    <div class="header-title">Реєстр <span>орендарів</span> &mdash; сторінка 2</div>
+    <div class="header-title">Реєстр <span>орендарів</span></div>
     <div class="search-wrap">
       <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
         <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -220,9 +220,10 @@
 
   <div class="stats-bar">
     <span>Показано:</span>
-    <span class="stats-count" id="countDisplay">65</span>
-    <span>із 65</span>
-    <button class="filter-btn" id="filterZnато">Тільки «Знято»</button>
+    <span class="stats-count" id="countDisplay">0</span>
+    <span id="totalLabel">із 0</span>
+    <button class="filter-btn" id="filterZnato">Тільки «Знято»</button>
+    <button class="filter-btn" id="filterUpo" style="margin-left:4px">УПО</button>
   </div>
 
   <main id="cardList"></main>
@@ -233,71 +234,517 @@
 
   <script>
   const data = [
-    { id_num: 58,  code: "582",  title: "ПП Тарковський",                        description: "м-н «Фламінго»",              status: "" },
-    { id_num: 59,  code: "583",  title: "КП «Побутсервіс»",                      description: "офіс Чекалюк",                status: "" },
-    { id_num: 60,  code: "586",  title: "ПП Васільченко В.В.",                   description: "кафе «Сдем»",                 status: "Знято" },
-    { id_num: 61,  code: "588",  title: "Фонд соціального страхування",          description: "",                             status: "Знято" },
-    { id_num: 62,  code: "797",  title: "«Приватбанк»",                          description: "",                             status: "1 арт" },
-    { id_num: 63,  code: "798",  title: "Архів районний трудовий",               description: "",                             status: "" },
-    { id_num: 64,  code: "800",  title: "УПФУ гараж",                            description: "",                             status: "" },
-    { id_num: 65,  code: "801",  title: "кв. Заїченко О.М.",                     description: "",                             status: "" },
-    { id_num: 66,  code: "1096", title: "ФОП Лук'ян М.Ф.",                      description: "м-н «Містер»",                status: "" },
-    { id_num: 67,  code: "1146", title: "«Індекс Банк»",                         description: "",                             status: "Знято" },
-    { id_num: 68,  code: "1147", title: "ПП Заїченко О.М.",                      description: "ювелірний м-н «Аурум»",       status: "" },
-    { id_num: 69,  code: "1149", title: "Упр. газового господарства",            description: "",                             status: "" },
-    { id_num: 70,  code: "1150", title: "ТОВ «Атойл»",                           description: "АЗС №15, 21",                 status: "Знято" },
-    { id_num: 71,  code: "1151", title: "ВАТ «Укрнафта»",                       description: "АЗС №7",                      status: "" },
-    { id_num: 72,  code: "1152", title: "ДК «Укравтотрансгаз» АГІКС-1",         description: "",                             status: "Знято" },
-    { id_num: 73,  code: "1200", title: "ПП Колос Ю.О.",                         description: "м-н «Світ рослин»",           status: "Знято" },
-    { id_num: 74,  code: "1220", title: "кв. Шпак М.Я.",                         description: "",                             status: "" },
-    { id_num: 75,  code: "1221", title: "СБУ приміщення",                        description: "",                             status: "Знято" },
-    { id_num: 76,  code: "1382", title: "ПП Чорноморець СТ",                     description: "ринок Торг «1000 дрібниць»",  status: "Знято" },
-    { id_num: 77,  code: "1488", title: "ПП Вовк М.А.",                          description: "фотостудія «Ф-клас»",         status: "" },
-    { id_num: 78,  code: "1489", title: "ПП Мусієнко С.А.",                      description: "кафе",                        status: "" },
-    { id_num: 79,  code: "1490", title: "ВП УМВС КЗВ",                           description: "",                             status: "" },
-    { id_num: 80,  code: "1512", title: "ФОП Шишковська В.П.",                   description: "м-н «Уют»",                   status: "" },
-    { id_num: 81,  code: "1514", title: "Райсуд ТУ ДСА у Вінницькій обл.",      description: "",                             status: "" },
-    { id_num: 82,  code: "1547", title: "СПД Гречко Т.В.",                       description: "м-н «Київський»",             status: "" },
-    { id_num: 83,  code: "1548", title: "СПД Гречко Т.В.",                       description: "м-н «Темп»",                  status: "Знято" },
-    { id_num: 84,  code: "1550", title: "кв. Кашівський П.П.",                   description: "",                             status: "" },
-    { id_num: 85,  code: "1573", title: "кв. Гетьман В.Г.",                      description: "",                             status: "" },
-    { id_num: 86,  code: "1622", title: "КП «Гайсинпобут»",                      description: "",                             status: "" },
-    { id_num: 87,  code: "1623", title: "«Трибуна праці» редакція газети",       description: "",                             status: "" },
-    { id_num: 88,  code: "1650", title: "ФОП Меланич О.В.",                      description: "м-н «Світ подарунків»",       status: "" },
-    { id_num: 89,  code: "1692", title: "ПП Белова С.Ф.",                        description: "склад",                       status: "" },
-    { id_num: 90,  code: "1709", title: "ТОВ ПК «Зоря Поділля»",                description: "",                             status: "" },
-    { id_num: 91,  code: "1772", title: "ПП Белова С.Ф.",                        description: "м-н «Будекспрес»",            status: "" },
-    { id_num: 92,  code: "1785", title: "кв. Суменкова С.М.",                    description: "",                             status: "" },
-    { id_num: 93,  code: "1817", title: "ТОВ «Атойл»",                           description: "АЗС №35",                     status: "" },
-    { id_num: 94,  code: "1818", title: "ПП Кащенко П.М.",                       description: "м-н «Одяг та взуття»",        status: "Знято" },
-    { id_num: 95,  code: "1819", title: "ПП Швець",                              description: "салон краси «Гетьман»",       status: "" },
-    { id_num: 96,  code: "1901", title: "кв. Павлавська Н.Т.",                   description: "",                             status: "" },
-    { id_num: 97,  code: "1978", title: "ПП Хитрук Н.Л.",                        description: "м-н «Сантехнік»",             status: "" },
-    { id_num: 98,  code: "1980", title: "ПП Гелевенко",                          description: "м-н «Модесса»",               status: "Знято" },
-    { id_num: 99,  code: "1985", title: "ПП Іщук Н.С.",                          description: "м-н «Елен»",                  status: "Знято" },
-    { id_num: 100, code: "1987", title: "ПП Іщук Н.С.",                          description: "м-н «Дені»",                  status: "2 км" },
-    { id_num: 101, code: "1988", title: "ПП Приходько Н.В.",                     description: "м-н",                         status: "" },
-    { id_num: 102, code: "1989", title: "Гараж Бордзахівський А.С.",             description: "",                             status: "Знято" },
-    { id_num: 103, code: "1990", title: "ФОП Посдничук В.А.",                    description: "",                             status: "" },
-    { id_num: 104, code: "1991", title: "Рай СТ",                                description: "",                             status: "" },
-    { id_num: 105, code: "1992", title: "КС «Перше кредитне товариство»",        description: "",                             status: "Знято" },
-    { id_num: 106, code: "1994", title: "ПП Пархонюк О.О.",                      description: "м-н «Автомагазин»",           status: "" },
-    { id_num: 107, code: "2031", title: "МДЛВМ Ветеринарна медицина",            description: "",                             status: "" },
-    { id_num: 108, code: "2053", title: "ПП Колесник В.І.",                      description: "м-н",                         status: "" },
-    { id_num: 109, code: "2057", title: "ФОП Коберник О.Д.",                     description: "склад",                       status: "" },
-    { id_num: 110, code: "2058", title: "ТОВ «Атойл»",                           description: "АЗС №13",                     status: "Знято" },
-    { id_num: 111, code: "2062", title: "ПП Скоропадський А.П.",                 description: "стомат. кабінет",             status: "" },
-    { id_num: 112, code: "2063", title: "ФОП Федорут С.О.",                      description: "склад",                       status: "" },
-    { id_num: 113, code: "2107", title: "ПП Рена К.В.",                          description: "м-н «Будцентр»",              status: "" },
-    { id_num: 114, code: "2108", title: "ПП Петух П.С.",                         description: "м-н",                         status: "" },
-    { id_num: 115, code: "2110", title: "ВАТ «Укртелеком» ЦТЕПМ «2»",           description: "",                             status: "" },
-    { id_num: 116, code: "2112", title: "«Банк Хрещатик»",                       description: "",                             status: "Знято" },
-    { id_num: 117, code: "2118", title: "кв. Антоненко С.Ф.",                    description: "",                             status: "" },
-    { id_num: 118, code: "2119", title: "Нафтова компанія «Народна»",            description: "",                             status: "" },
-    { id_num: 119, code: "2132", title: "МРЕВ",                                  description: "",                             status: "" },
-    { id_num: 120, code: "2133", title: "СПД Павліченко",                        description: "м-н «Світ TV»",               status: "м.Теплик" },
-    { id_num: 121, code: "2134", title: "ЦРЛ м. Теплик",                         description: "",                             status: "м.Теплик" },
-    { id_num: 122, code: "2136", title: "СПД Безносюк І.І.",                     description: "м-н «Анастасія»",             status: "м.Теплик" },
+    // ===== Сторінка 8 (рядки 21–72) =====
+    { id_num: 21,  code: "124",  title: "«Приватбанк»",                              description: "",                                    status: "" },
+    { id_num: 22,  code: "125",  title: "ФОП Цокур В.Г.",                            description: "«Едельвейс»",                         status: "" },
+    { id_num: 23,  code: "126",  title: "ФОП Марчук Р.П.",                           description: "м-н «Світ секунд Хенда»",             status: "Знято" },
+    { id_num: 24,  code: "176",  title: "ФОП Петрівська Т.В.",                       description: "Нова пошта",                          status: "" },
+    { id_num: 25,  code: "184",  title: "Гіппократ стоматологічний центр",           description: "",                                    status: "" },
+    { id_num: 26,  code: "208",  title: "ПП Невідомий В.В.",                         description: "кафе «Меркурій»",                     status: "" },
+    { id_num: 27,  code: "209",  title: "ФОП Станішевський Д.П.",                   description: "«В мережі»",                          status: "" },
+    { id_num: 28,  code: "217",  title: "буд. Голянтус О.М.",                        description: "",                                    status: "" },
+    { id_num: 29,  code: "216",  title: "ФОП Луцик В.А.",                            description: "кафе «Млин»",                         status: "" },
+    { id_num: 30,  code: "247",  title: "кв. Плаксіна М.Г.",                         description: "",                                    status: "" },
+    { id_num: 31,  code: "248",  title: "Стоматологічний центр Гіпократ-Щуки О.В.", description: "",                                    status: "пожарка" },
+    { id_num: 32,  code: "249",  title: "ФОП Ковтун Л.М.",                           description: "м-н «Техніка»",                       status: "Знято" },
+    { id_num: 33,  code: "250",  title: "ТОВ «Зодчий офіс»",                        description: "",                                    status: "" },
+    { id_num: 34,  code: "251",  title: "ФОП Василевський Г.В.",                    description: "«Телефони»",                          status: "Знято" },
+    { id_num: 35,  code: "252",  title: "ФОП Ямковий В.Д.",                          description: "м-н «Чоловіча та жіноча білизна»",    status: "" },
+    { id_num: 36,  code: "270",  title: "ФОП Дутко І.Б.",                            description: "м-н «Комп'ютерний всесвіт»",          status: "" },
+    { id_num: 37,  code: "276",  title: "ФОП Пільганчук О.Д.",                      description: "м-н «Марго»",                         status: "" },
+    { id_num: 38,  code: "277",  title: "ФОП Поплавська М.М.",                      description: "м-н «Жжук»",                          status: "Знято" },
+    { id_num: 39,  code: "278",  title: "кв. Кривого О.О.",                          description: "",                                    status: "" },
+    { id_num: 40,  code: "279",  title: "буд. Гуро А.М.",                            description: "",                                    status: "" },
+    { id_num: 41,  code: "303",  title: "ТОВ «Катран»",                             description: "АЗС",                                 status: "ТОВ ТАН-ОЙЛ" },
+    { id_num: 42,  code: "304",  title: "ФОП Деревʼяненко І.В.",                    description: "м-н «Техноярмарок»",                  status: "" },
+    { id_num: 43,  code: "305",  title: "ФОП Пендюк М.В.",                           description: "",                                    status: "" },
+    { id_num: 44,  code: "333",  title: "ФОП Немировська С.М.",                     description: "м-н «Світлана. Валентина»",           status: "" },
+    { id_num: 45,  code: "334",  title: "буд. Паурчак В.Г.",                         description: "",                                    status: "" },
+    { id_num: 46,  code: "335",  title: "кв. Зарипова В.Б.",                         description: "",                                    status: "" },
+    { id_num: 47,  code: "336",  title: "кв. Саблук В.Г.",                           description: "",                                    status: "" },
+    { id_num: 48,  code: "337",  title: "кв. Борзихівської С.М.",                   description: "",                                    status: "" },
+    { id_num: 49,  code: "338",  title: "кв. Любомської Н.В.",                      description: "",                                    status: "" },
+    { id_num: 50,  code: "339",  title: "буд. Підлипняка В.В.",                     description: "",                                    status: "" },
+    { id_num: 51,  code: "340",  title: "буд. Поляк І.В.",                           description: "",                                    status: "" },
+    { id_num: 52,  code: "341",  title: "буд. Кугот Л.В.",                           description: "",                                    status: "" },
+    { id_num: 53,  code: "342",  title: "ФОП Сивак І.А.",                            description: "м-н «Лимон»",                         status: "" },
+    { id_num: 54,  code: "424",  title: "СТОВ «Ренет»",                              description: "",                                    status: "м.Теплик" },
+    { id_num: 55,  code: "450",  title: "«Центр зайнятості»",                        description: "",                                    status: "пожарка" },
+    { id_num: 56,  code: "451",  title: "ФОП Подчас В.Ф.",                          description: "м-н «Золото»",                        status: "" },
+    { id_num: 57,  code: "452",  title: "ФОП Подчас В.Ф.",                          description: "м-н «Золоте сяйво»",                  status: "" },
+    { id_num: 58,  code: "453",  title: "Музей М.Д.Леонтовича",                     description: "",                                    status: "" },
+    { id_num: 59,  code: "454",  title: "«Тегра Україна ЛТД»",                      description: "",                                    status: "пожарка" },
+    { id_num: 60,  code: "470",  title: "Музей М.Д.Леонтовича",                     description: "",                                    status: "пожарка" },
+    { id_num: 61,  code: "471",  title: "буд. Голомовзий О.О.",                     description: "",                                    status: "" },
+    { id_num: 62,  code: "472",  title: "буд. Яковенко В.В.",                       description: "",                                    status: "" },
+    { id_num: 63,  code: "473",  title: "кв. Салтана Н.М.",                          description: "",                                    status: "" },
+    { id_num: 64,  code: "474",  title: "кв. Штейман Р.А.",                          description: "",                                    status: "" },
+    { id_num: 65,  code: "520",  title: "буд. Безносенка О.Ф.",                     description: "",                                    status: "" },
+    { id_num: 66,  code: "521",  title: "буд. Чорної О.М.",                          description: "",                                    status: "" },
+    { id_num: 67,  code: "522",  title: "буд. Должкевич Л.Б.",                      description: "",                                    status: "" },
+    { id_num: 68,  code: "523",  title: "ФОП Браславського Ю.С.",                   description: "АЗС",                                 status: "" },
+    { id_num: 69,  code: "590",  title: "буд. Юрченко В.А.",                        description: "",                                    status: "" },
+    { id_num: 70,  code: "591",  title: "буд. Кучер Т.В.",                           description: "",                                    status: "" },
+    { id_num: 71,  code: "592",  title: "буд. Планета Т.П.",                         description: "",                                    status: "" },
+    { id_num: 72,  code: "593",  title: "АППБ «Аваль банк»",                        description: "",                                    status: "м.Теплик" },
+
+    // ===== Сторінка 9 (рядки 73–125) =====
+    { id_num: 73,  code: "594",  title: "Ломбард «Комод» «Горбач О.О. і Компанія»", description: "",                                   status: "" },
+    { id_num: 74,  code: "595",  title: "ТОВ «Ла-Він»",                             description: "АІЗС",                               status: "Знято / зміна марки" },
+    { id_num: 75,  code: "596",  title: "УПФУ в Теплицькому р-ні",                  description: "",                                    status: "" },
+    { id_num: 76,  code: "597",  title: "ДП «Бджілянський спиртовий завод»",        description: "склад",                              status: "Знято" },
+    { id_num: 77,  code: "598",  title: "Центр зайнятості Гайсинський районний",    description: "",                                    status: "" },
+    { id_num: 78,  code: "599",  title: "Гайсинська між лікарняна аптека №2",      description: "",                                    status: "" },
+    { id_num: 79,  code: "600",  title: "ТОВ «НК «Зоря Поділля»",                  description: "зоотехнічний відділ",                 status: "" },
+    { id_num: 80,  code: "601",  title: "ТОВ «НК «Зоря Поділля»",                  description: "засоби захисту рослин",               status: "" },
+    { id_num: 81,  code: "602",  title: "ТОВ «НК «Зоря Поділля»",                  description: "склад прекурсорів",                   status: "" },
+    { id_num: 82,  code: "603",  title: "ФОП Панфіл О.С.",                          description: "",                                    status: "" },
+    { id_num: 83,  code: "604",  title: "ФОП Голуб Т.І.",                           description: "м-н «Мотолідер»",                     status: "" },
+    { id_num: 84,  code: "605",  title: "ФОП Берегнер Д.В.",                        description: "кафетерій «Кав'ярня»",                status: "" },
+    { id_num: 85,  code: "606",  title: "ФОП Белінський П.П.",                      description: "м-н «Наш карavan»",                   status: "" },
+    { id_num: 86,  code: "607",  title: "ФОП Богачов Ю.Ю.",                         description: "м-н «І ранд»",                        status: "Знято" },
+    { id_num: 87,  code: "621",  title: "буд. Яковенко К.П.",                       description: "",                                    status: "смт.Теплик" },
+    { id_num: 88,  code: "622",  title: "буд. Мартинюк В.В.",                       description: "",                                    status: "" },
+    { id_num: 89,  code: "623",  title: "буд. Колодій М.І.",                        description: "",                                    status: "" },
+    { id_num: 90,  code: "624",  title: "буд. Дмитренко О.А.",                     description: "",                                    status: "" },
+    { id_num: 91,  code: "625",  title: "кв. Відомська В.В.",                       description: "",                                    status: "" },
+    { id_num: 92,  code: "626",  title: "кв. Старостенко О.М.",                     description: "",                                    status: "Знято" },
+    { id_num: 93,  code: "627",  title: "кв. Килимник Н.Д.",                        description: "",                                    status: "" },
+    { id_num: 94,  code: "628",  title: "кв. Бортник С.О.",                         description: "",                                    status: "" },
+    { id_num: 95,  code: "629",  title: "кв. Васильченко В.В.",                     description: "",                                    status: "пожарка" },
+    { id_num: 96,  code: "630",  title: "ТОВ «НК Зоря Поділля»",                   description: "",                                    status: "" },
+    { id_num: 97,  code: "631",  title: "ФОП Яковенко З.В.",                        description: "м-н «1 – контр»",                     status: "?" },
+    { id_num: 98,  code: "632",  title: "«Укрпошта»",                               description: "",                                    status: "" },
+    { id_num: 99,  code: "635",  title: "буд. Тимошенко Б.М.",                      description: "",                                    status: "" },
+    { id_num: 100, code: "636",  title: "буд. Салтана Н.М.",                        description: "",                                    status: "" },
+    { id_num: 101, code: "637",  title: "буд. Голуб Т.І.",                          description: "",                                    status: "" },
+    { id_num: 102, code: "638",  title: "буд. Сирота О.Ф.",                         description: "",                                    status: "" },
+    { id_num: 103, code: "639",  title: "ТОВ «Ріва-Сталь»",                         description: "",                                    status: "" },
+    { id_num: 104, code: "640",  title: "«Теплицька РС УДМС у Вінницькій обл.»",   description: "",                                    status: "смт.Теплик / Знято" },
+    { id_num: 105, code: "641",  title: "Теплицькі електромережі",                  description: "",                                    status: "смт.Теплик" },
+    { id_num: 106, code: "676",  title: "ТОВ «НК Рітейл» «Наш край»",              description: "",                                    status: "смт.Теплик / Знято / ФОРА" },
+    { id_num: 107, code: "677",  title: "буд. Волошин П.В.",                        description: "",                                    status: "смт.Теплик" },
+    { id_num: 108, code: "696",  title: "ФОП Круш Б.І.",                            description: "деревообробний цех",                  status: "" },
+    { id_num: 109, code: "761",  title: "буд. Лашенко Г.Ю.",                        description: "",                                    status: "" },
+    { id_num: 110, code: "797",  title: "ТОВ «Корпорація Скіф – 96»",              description: "",                                    status: "" },
+    { id_num: 111, code: "797",  title: "Теплицький районний центр зайнятості",     description: "",                                    status: "смт.Теплик" },
+    { id_num: 112, code: "837",  title: "Гайсинський РС УДМС",                      description: "",                                    status: "пожарка" },
+    { id_num: 113, code: "838",  title: "Теплицький РС УДМС",                       description: "",                                    status: "Знято / смт.Теплик / пожарка" },
+    { id_num: 114, code: "886",  title: "ФОП Максимлюк С.І.",                       description: "м-н «Економ плюс»",                   status: "" },
+    { id_num: 115, code: "887",  title: "буд. Замкового В.І.",                      description: "",                                    status: "" },
+    { id_num: 116, code: "900",  title: "кв. Матвєєва Л.І.",                        description: "",                                    status: "" },
+    { id_num: 117, code: "901",  title: "ДП «Гайсинське лісове господарство»",     description: "",                                    status: "Знято" },
+    { id_num: 118, code: "???",  title: "Територіальний центр соціального обслуговування", description: "",                            status: "" },
+    { id_num: 119, code: "1053", title: "ТОВ «Корпорація Скіф – 96»",              description: "",                                    status: "пожарка" },
+    { id_num: 120, code: "1054", title: "кв. Маленчук Н.О.",                        description: "",                                    status: "" },
+    { id_num: 121, code: "1055", title: "буд. Кушнірук В.О.",                       description: "",                                    status: "Знято" },
+    { id_num: 122, code: "1062", title: "буд. Нечиталюк І.В.",                      description: "",                                    status: "смт.Теплик" },
+    { id_num: 123, code: "1065", title: "буд. Браславського Ю.С.",                  description: "",                                    status: "смт.Теплик" },
+    { id_num: 124, code: "1066", title: "кв. Бойко В.П.",                           description: "",                                    status: "" },
+    { id_num: 125, code: "1067", title: "ФОП Подчос В.Ф.",                          description: "ювелірний бутік «Золото»",             status: "" },
+
+    // ===== Сторінка 10 (рядки 126–178) =====
+    { id_num: 126, code: "1068", title: "ТОВ «Подорожник – Вінниця»",               description: "аптека",                              status: "" },
+    { id_num: 127, code: "1069", title: "ТОВ «НК «Зоря Поділля»",                  description: "",                                    status: "" },
+    { id_num: 128, code: "1070", title: "гараж Управління освіти фізичної культури", description: "",                                   status: "Знято" },
+    { id_num: 129, code: "1074", title: "буд. Колодійчук С.В.",                     description: "",                                    status: "Знято" },
+    { id_num: 130, code: "1075", title: "буд. Косенко Л.П.",                        description: "",                                    status: "" },
+    { id_num: 131, code: "1076", title: "ТОВ «Руш» м-н «Єва -2151»",               description: "",                                    status: "Знято" },
+    { id_num: 132, code: "1077", title: "ПП фірма «Найс»",                          description: "",                                    status: "" },
+    { id_num: 133, code: "1136", title: "ФОП Чайко В.О.",                           description: "приміщення",                          status: "Знято" },
+    { id_num: 134, code: "1175", title: "кв. Лактіонова І.В.",                      description: "",                                    status: "" },
+    { id_num: 135, code: "1176", title: "буд. Дегелье Г.С.",                        description: "",                                    status: "" },
+    { id_num: 136, code: "1177", title: "«Аваль банк»",                             description: "банкомат вул. 1-го Травня, 34",       status: "" },
+    { id_num: 137, code: "1178", title: "«Аваль банк»",                             description: "банкомат вул. 1-го Травня, 30",       status: "" },
+    { id_num: 138, code: "1198", title: "буд. Решетнік В.І.",                       description: "",                                    status: "" },
+    { id_num: 139, code: "1199", title: "буд. Чайки О.Д.",                          description: "",                                    status: "" },
+    { id_num: 140, code: "1200", title: "буд. Решетнік І.В.",                       description: "",                                    status: "" },
+    { id_num: 141, code: "1201", title: "буд. Бойко П.О.",                          description: "",                                    status: "" },
+    { id_num: 142, code: "1202", title: "буд. Витюк В.А.",                          description: "",                                    status: "" },
+    { id_num: 143, code: "1203", title: "буд. Юрчак Т.А.",                          description: "",                                    status: "" },
+    { id_num: 144, code: "1204", title: "буд. Котенко Н.М.",                        description: "",                                    status: "" },
+    { id_num: 145, code: "1205", title: "буд. Мандибури Л.М.",                      description: "",                                    status: "" },
+    { id_num: 146, code: "1206", title: "буд. Огороднік Н.С.",                      description: "",                                    status: "" },
+    { id_num: 147, code: "1207", title: "буд. Шевчук Л.О.",                         description: "",                                    status: "" },
+    { id_num: 148, code: "1208", title: "гараж Подчос А.О.",                        description: "",                                    status: "" },
+    { id_num: 149, code: "1213", title: "буд. Лещенко Т.О.",                        description: "",                                    status: "" },
+    { id_num: 150, code: "1214", title: "буд. Рудницької Н.В.",                     description: "",                                    status: "Знято" },
+    { id_num: 151, code: "1215", title: "буд. Троян Т.М.",                          description: "",                                    status: "" },
+    { id_num: 152, code: "1216", title: "кв. Зеленецької К.І.",                     description: "",                                    status: "" },
+    { id_num: 153, code: "1217", title: "кв. Манченка О.І.",                        description: "",                                    status: "" },
+    { id_num: 154, code: "1218", title: "кв. Шврадрі А.П.",                         description: "",                                    status: "Знято" },
+    { id_num: 155, code: "1219", title: "ПрАТ «КонцерниХлібпром» ВП «Гайсинхліб»", description: "",                                   status: "" },
+    { id_num: 156, code: "1300", title: "буд. Максимчук С.М.",                      description: "",                                    status: "" },
+    { id_num: 157, code: "1301", title: "буд. Сторожук В.І.",                       description: "",                                    status: "" },
+    { id_num: 158, code: "1302", title: "Банк «Аваль»",                             description: "",                                    status: "" },
+    { id_num: 159, code: "1303", title: "ФОП Решетнік Л.В.",                        description: "кафе «Смакота»",                      status: "" },
+    { id_num: 160, code: "1323", title: "кв. Яковенко В.К.",                        description: "",                                    status: "смт.Теплик" },
+    { id_num: 161, code: "1324", title: "буд. Ворушак В.Б.",                        description: "",                                    status: "смт.Теплик" },
+    { id_num: 162, code: "1325", title: "буд. Чорного В.А.",                        description: "",                                    status: "" },
+    { id_num: 163, code: "1326", title: "ПП «Медіа Дністер»",                       description: "",                                    status: "Знято" },
+    { id_num: 164, code: "1327", title: "ФОП Ковальщик О.П.",                       description: "косметичний салон",                   status: "Знято" },
+    { id_num: 165, code: "1328", title: "ТОВ «Преміум Фінанс»",                     description: "кіоск обміну валюти",                 status: "" },
+    { id_num: 166, code: "1337", title: "буд. Гребенюк В.М.",                       description: "",                                    status: "" },
+    { id_num: 167, code: "1338", title: "ТОВ ВД «Нова Інформація»",                 description: "",                                    status: "Знято" },
+    { id_num: 168, code: "1341", title: "буд. Глинчук В.В.",                        description: "",                                    status: "" },
+    { id_num: 169, code: "1342", title: "буд. Кашенко П.М.",                        description: "",                                    status: "Знято" },
+    { id_num: 170, code: "1343", title: "кв. Тимош В.С.",                           description: "",                                    status: "" },
+    { id_num: 171, code: "1344", title: "буд. Тарасюк В.А.",                        description: "",                                    status: "смт.Теплик" },
+    { id_num: 172, code: "1345", title: "«Ощадбанк» відділення 10001/0102",         description: "",                                    status: "" },
+    { id_num: 173, code: "1346", title: "ФОП Максимець Г.О.",                       description: "ювелірний бутік",                     status: "смт.Теплик" },
+    { id_num: 174, code: "1347", title: "ПАТ «Укртелеком»",                         description: "",                                    status: "" },
+    { id_num: 175, code: "1348", title: "ФОП Безпалько С.В.",                       description: "м-н «Шик і Блиск»",                   status: "смт.Теплик" },
+    { id_num: 176, code: "1349", title: "ФОП Голуб Т.І.",                           description: "м-н «Мотолідер 2»",                   status: "смт.Теплик" },
+    { id_num: 177, code: "1350", title: "ПП «Конекс»",                              description: "аптека №99",                          status: "смт.Теплик" },
+    { id_num: 178, code: "1351", title: "ТОВ «Гайсинський молокозавод»",            description: "",                                    status: "" },
+
+    // ===== Сторінка 11 (рядки 179–230) =====
+    { id_num: 179, code: "1352", title: "ПП «Гарантавто»",                          description: "",                                    status: "Знято" },
+    { id_num: 180, code: "1353", title: "СТ «Центральний ринок»",                   description: "офіс",                               status: "смт.Теплик" },
+    { id_num: 181, code: "1398", title: "ТОВ «Голлентрейд Груп»",                  description: "офіс",                               status: "" },
+    { id_num: 182, code: "1399", title: "ФОП Врублевський О.В.",                    description: "ремонт комп'ютер. техніки",            status: "Знято" },
+    { id_num: 183, code: "1415", title: "ТОВ «Скіф – 96»",                          description: "спортивний з-л",                      status: "" },
+    { id_num: 184, code: "1416", title: "ТОВ «Скіф – 96»",                          description: "спортивна база",                      status: "" },
+    { id_num: 185, code: "1417", title: "ТОВ «Агіт – А»",                           description: "нафтова база",                        status: "" },
+    { id_num: 186, code: "1418", title: "Гайсинська район. держ. лікарня ветерин. медицини", description: "",                           status: "" },
+    { id_num: 187, code: "1419", title: "ФОП Ременюк С.М.",                         description: "м-н «Київстар»",                      status: "" },
+    { id_num: 188, code: "1420", title: "ССТ «Буг»",                                description: "торгово-офісне приміщення",           status: "смт.Теплик" },
+    { id_num: 189, code: "1427", title: "ССТ «Буг»",                                description: "пожарка",                             status: "" },
+    { id_num: 190, code: "1428", title: "буд. Ткаченко А.С.",                       description: "",                                    status: "" },
+    { id_num: 191, code: "1429", title: "ПАТ «Вінницягаз»",                         description: "",                                    status: "???" },
+    { id_num: 192, code: "1661", title: "ПрАТ «Зернопродукт МХП»",                  description: "склад",                               status: "" },
+    { id_num: 193, code: "1662", title: "ФОП Сніжко Т.П.",                          description: "ювелірний бутік «Укрзолото»",         status: "" },
+    { id_num: 194, code: "1663", title: "КУ «Територіальний центр соціального обслуговування»", description: "",                        status: "пожарка" },
+    { id_num: 195, code: "1664", title: "ФОП Петрівська Т.В.",                      description: "«Нова пошта»",                        status: "пожарка / смт.Теплик" },
+    { id_num: 196, code: "1665", title: "УДКУ у Теплицькому р-ні",                  description: "",                                    status: "пожарка / Знято" },
+    { id_num: 197, code: "1666", title: "ТОВ «Компанія Трейд Ойл»",                description: "",                                    status: "" },
+    { id_num: 198, code: "1667", title: "ФОП Ковальчук Л.Ю.",                       description: "офіс",                               status: "" },
+    { id_num: 199, code: "1668", title: "буд. Черепахи В.Г.",                       description: "",                                    status: "" },
+    { id_num: 200, code: "1669", title: "буд. Хитрук І.М.",                         description: "",                                    status: "" },
+    { id_num: 201, code: "1670", title: "кв. Солодко О.П.",                         description: "",                                    status: "" },
+    { id_num: 202, code: "1671", title: "кв. Кучерук В.М.",                         description: "",                                    status: "" },
+    { id_num: 203, code: "1672", title: "гараж Мазепи С.В.",                        description: "пожарка",                             status: "" },
+    { id_num: 204, code: "1673", title: "ФОП Лук'ян М.Ф.",                          description: "«Майстер»",                           status: "" },
+    { id_num: 205, code: "1674", title: "ЦНАП та державної реєстрації",             description: "",                                    status: "смт.Теплик" },
+    { id_num: 206, code: "1675", title: "буд. Марчук І.В.",                         description: "",                                    status: "" },
+    { id_num: 207, code: "1676", title: "буд. Черниш Н.В.",                         description: "",                                    status: "Знято" },
+    { id_num: 208, code: "1677", title: "буд. Гончар Н.М.",                         description: "",                                    status: "" },
+    { id_num: 209, code: "1678", title: "буд. Бурмега В.В.",                        description: "",                                    status: "Знято" },
+    { id_num: 210, code: "1679", title: "буд. Балан А.В.",                          description: "",                                    status: "Знято" },
+    { id_num: 211, code: "1680", title: "буд. Пташки О.В.",                         description: "",                                    status: "" },
+    { id_num: 212, code: "1681", title: "буд. Бордовська Н.П.",                     description: "",                                    status: "" },
+    { id_num: 213, code: "1683", title: "буд. Грабчак І.В.",                        description: "",                                    status: "" },
+    { id_num: 214, code: "1684", title: "кв. Дейнекової Н.Д.",                      description: "",                                    status: "" },
+    { id_num: 215, code: "1685", title: "Гайсинська ОДПІ ГУДФС",                    description: "",                                    status: "" },
+    { id_num: 216, code: "1751", title: "ФОП Трохимчук А.В.",                       description: "м-н «Покрівля і фасад»",              status: "Зміна на збln5" },
+    { id_num: 217, code: "1752", title: "ФОП Герасименко Р.А.",                     description: "м-н «Дерево Буд»",                    status: "" },
+    { id_num: 218, code: "1753", title: "ФОП Нечипорук В.М.",                       description: "м-н «Техно Топ»",                     status: "" },
+    { id_num: 219, code: "1754", title: "ФОП Поліщук Ю.П.",                         description: "салон краси",                         status: "Знято" },
+    { id_num: 220, code: "1755", title: "ФОП Конотопенко В.А.",                     description: "кафе «Дует»",                         status: "" },
+    { id_num: 221, code: "1756", title: "ПрАТ «Гайсинське СТП «Агромаш»",          description: "",                                    status: "" },
+    { id_num: 222, code: "1757", title: "Красноплільська сільська рада",             description: "",                                    status: "" },
+    { id_num: 223, code: "1772", title: "ФОП Бондар І.І.",                          description: "приміщення тех.огляду",               status: "" },
+    { id_num: 224, code: "1773", title: "ФОП Бордзіхівський О.С.",                  description: "м-н «Новий маркет»",                  status: "Знято" },
+    { id_num: 225, code: "1774", title: "ФОП Берзнер Д.В.",                         description: "кафетерій",                           status: "" },
+    { id_num: 226, code: "1869", title: "ФОП Кугот П.А.",                           description: "ветеринарна аптека",                  status: "" },
+    { id_num: 227, code: "1870", title: "ФОП Пучковська Т.С.",                      description: "м-н «Мрія»",                          status: "Знято" },
+    { id_num: 228, code: "1871", title: "СО «Гайсинські ЕМ»",                       description: "",                                    status: "" },
+    { id_num: 229, code: "1872", title: "КП «Гайсин водоканал» Бєлендіївський водозабор", description: "",                             status: "" },
+    { id_num: 230, code: "1873", title: "КП «Гайсин водоканал» Кучурівський водозабор", description: "",                              status: "" },
+
+    // ===== Сторінка 2 (рядки 58–122, оригінальний файл) =====
+    { id_num: 231, code: "582",  title: "ПП Тарковський",                            description: "м-н «Фламінго»",                      status: "" },
+    { id_num: 232, code: "583",  title: "КП «Побутсервіс»",                          description: "офіс Чекалюк",                        status: "" },
+    { id_num: 233, code: "586",  title: "ПП Васільченко В.В.",                       description: "кафе «Сдем»",                         status: "Знято" },
+    { id_num: 234, code: "588",  title: "Фонд соціального страхування",              description: "",                                    status: "Знято" },
+    { id_num: 235, code: "797",  title: "«Приватбанк»",                              description: "",                                    status: "1 арт" },
+    { id_num: 236, code: "798",  title: "Архів районний трудовий",                   description: "",                                    status: "" },
+    { id_num: 237, code: "800",  title: "УПФУ гараж",                                description: "",                                    status: "" },
+    { id_num: 238, code: "801",  title: "кв. Заїченко О.М.",                         description: "",                                    status: "" },
+    { id_num: 239, code: "1096", title: "ФОП Лук'ян М.Ф.",                          description: "м-н «Містер»",                        status: "" },
+    { id_num: 240, code: "1146", title: "«Індекс Банк»",                             description: "",                                    status: "Знято" },
+    { id_num: 241, code: "1147", title: "ПП Заїченко О.М.",                          description: "ювелірний м-н «Аурум»",               status: "" },
+    { id_num: 242, code: "1149", title: "Упр. газового господарства",                description: "",                                    status: "" },
+    { id_num: 243, code: "1150", title: "ТОВ «Атойл»",                              description: "АЗС №15, 21",                         status: "Знято" },
+    { id_num: 244, code: "1151", title: "ВАТ «Укрнафта»",                           description: "АЗС №7",                              status: "" },
+    { id_num: 245, code: "1152", title: "ДК «Укравтотрансгаз» АГІКС-1",             description: "",                                    status: "Знято" },
+    { id_num: 246, code: "1200", title: "ПП Колос Ю.О.",                             description: "м-н «Світ рослин»",                   status: "Знято" },
+    { id_num: 247, code: "1220", title: "кв. Шпак М.Я.",                             description: "",                                    status: "" },
+    { id_num: 248, code: "1221", title: "СБУ приміщення",                            description: "",                                    status: "Знято" },
+    { id_num: 249, code: "1382", title: "ПП Чорноморець СТ",                         description: "ринок Торг «1000 дрібниць»",          status: "Знято" },
+    { id_num: 250, code: "1488", title: "ПП Вовк М.А.",                              description: "фотостудія «Ф-клас»",                 status: "" },
+    { id_num: 251, code: "1489", title: "ПП Мусієнко С.А.",                          description: "кафе",                               status: "" },
+    { id_num: 252, code: "1490", title: "ВП УМВС КЗВ",                               description: "",                                    status: "" },
+    { id_num: 253, code: "1512", title: "ФОП Шишковська В.П.",                       description: "м-н «Уют»",                           status: "" },
+    { id_num: 254, code: "1514", title: "Райсуд ТУ ДСА у Вінницькій обл.",          description: "",                                    status: "" },
+    { id_num: 255, code: "1547", title: "СПД Гречко Т.В.",                           description: "м-н «Київський»",                     status: "" },
+    { id_num: 256, code: "1548", title: "СПД Гречко Т.В.",                           description: "м-н «Темп»",                          status: "Знято" },
+    { id_num: 257, code: "1550", title: "кв. Кашівський П.П.",                       description: "",                                    status: "" },
+    { id_num: 258, code: "1573", title: "кв. Гетьман В.Г.",                          description: "",                                    status: "" },
+    { id_num: 259, code: "1622", title: "КП «Гайсинпобут»",                          description: "",                                    status: "" },
+    { id_num: 260, code: "1623", title: "«Трибуна праці» редакція газети",           description: "",                                    status: "" },
+    { id_num: 261, code: "1650", title: "ФОП Меланич О.В.",                          description: "м-н «Світ подарунків»",               status: "" },
+    { id_num: 262, code: "1692", title: "ПП Белова С.Ф.",                            description: "склад",                               status: "" },
+    { id_num: 263, code: "1709", title: "ТОВ ПК «Зоря Поділля»",                    description: "",                                    status: "" },
+    { id_num: 264, code: "1772", title: "ПП Белова С.Ф.",                            description: "м-н «Будекспрес»",                    status: "" },
+    { id_num: 265, code: "1785", title: "кв. Суменкова С.М.",                        description: "",                                    status: "" },
+    { id_num: 266, code: "1817", title: "ТОВ «Атойл»",                              description: "АЗС №35",                             status: "" },
+    { id_num: 267, code: "1818", title: "ПП Кащенко П.М.",                          description: "м-н «Одяг та взуття»",                status: "Знято" },
+    { id_num: 268, code: "1819", title: "ПП Швець",                                  description: "салон краси «Гетьман»",               status: "" },
+    { id_num: 269, code: "1901", title: "кв. Павлавська Н.Т.",                       description: "",                                    status: "" },
+    { id_num: 270, code: "1978", title: "ПП Хитрук Н.Л.",                            description: "м-н «Сантехнік»",                     status: "" },
+    { id_num: 271, code: "1980", title: "ПП Гелевенко",                              description: "м-н «Модесса»",                       status: "Знято" },
+    { id_num: 272, code: "1985", title: "ПП Іщук Н.С.",                              description: "м-н «Елен»",                          status: "Знято" },
+    { id_num: 273, code: "1987", title: "ПП Іщук Н.С.",                              description: "м-н «Дені»",                          status: "2 км" },
+    { id_num: 274, code: "1988", title: "ПП Приходько Н.В.",                         description: "м-н",                                 status: "" },
+    { id_num: 275, code: "1989", title: "Гараж Бордзахівський А.С.",                 description: "",                                    status: "Знято" },
+    { id_num: 276, code: "1990", title: "ФОП Посдничук В.А.",                        description: "",                                    status: "" },
+    { id_num: 277, code: "1991", title: "Рай СТ",                                    description: "",                                    status: "" },
+    { id_num: 278, code: "1992", title: "КС «Перше кредитне товариство»",            description: "",                                    status: "Знято" },
+    { id_num: 279, code: "1994", title: "ПП Пархонюк О.О.",                          description: "м-н «Автомагазин»",                   status: "" },
+    { id_num: 280, code: "2031", title: "МДЛВМ Ветеринарна медицина",                description: "",                                    status: "" },
+    { id_num: 281, code: "2053", title: "ПП Колесник В.І.",                          description: "м-н",                                 status: "" },
+    { id_num: 282, code: "2057", title: "ФОП Коберник О.Д.",                         description: "склад",                               status: "" },
+    { id_num: 283, code: "2058", title: "ТОВ «Атойл»",                              description: "АЗС №13",                             status: "Знято" },
+    { id_num: 284, code: "2062", title: "ПП Скоропадський А.П.",                     description: "стомат. кабінет",                     status: "" },
+    { id_num: 285, code: "2063", title: "ФОП Федорут С.О.",                          description: "склад",                               status: "" },
+    { id_num: 286, code: "2107", title: "ПП Рена К.В.",                              description: "м-н «Будцентр»",                      status: "" },
+    { id_num: 287, code: "2108", title: "ПП Петух П.С.",                             description: "м-н",                                 status: "" },
+    { id_num: 288, code: "2110", title: "ВАТ «Укртелеком» ЦТЕПМ «2»",               description: "",                                    status: "" },
+    { id_num: 289, code: "2112", title: "«Банк Хрещатик»",                           description: "",                                    status: "Знято" },
+    { id_num: 290, code: "2118", title: "кв. Антоненко С.Ф.",                        description: "",                                    status: "" },
+    { id_num: 291, code: "2119", title: "Нафтова компанія «Народна»",                description: "",                                    status: "" },
+    { id_num: 292, code: "2132", title: "МРЕВ",                                       description: "",                                    status: "" },
+    { id_num: 293, code: "2133", title: "СПД Павліченко",                            description: "м-н «Світ TV»",                       status: "м.Теплик" },
+    { id_num: 294, code: "2134", title: "ЦРЛ м. Теплик",                             description: "",                                    status: "м.Теплик" },
+    { id_num: 295, code: "2136", title: "СПД Безносюк І.І.",                         description: "м-н «Анастасія»",                     status: "м.Теплик" },
+
+    // ===== Фото 228-280 (сторінка 5) =====
+    { id_num: 228, code: "4048", title: "ФОП Золотар Х.О.",                          description: "«Holliday»",                           status: "" },
+    { id_num: 229, code: "4049", title: "«Хрещатик банк»",                           description: "",                                    status: "" },
+    { id_num: 230, code: "4050", title: "ПП Цибуленко Т.Б.",                         description: "м-н «Джерпромпостач»",                 status: "" },
+    { id_num: 231, code: "4053", title: "ПП Шевченко Т.В.",                          description: "м-н «Ультрамарин»",                   status: "" },
+    { id_num: 232, code: "4055", title: "ТОВ «Атлантик Солюшнз»",                   description: "",                                    status: "" },
+    { id_num: 233, code: "4058", title: "ПП Буг",                                    description: "",                                    status: "" },
+    { id_num: 234, code: "4060", title: "ПП Бочанівна Т.М.",                         description: "",                                    status: "" },
+    { id_num: 235, code: "4063", title: "Гайсинська між лікарняна аптека",           description: "",                                    status: "" },
+    { id_num: 236, code: "4068", title: "ТОВ «АВ Метал груп»",                      description: "СТС торговий майданчик",               status: "" },
+    { id_num: 237, code: "4070", title: "ФОП Брежнєв А.М.",                          description: "м-н «Шик і Блиск»",                   status: "" },
+    { id_num: 238, code: "4072", title: "ФОП «Адміністративний сервіс»",             description: "",                                    status: "" },
+    { id_num: 239, code: "4083", title: "ФОП Ніколаєнко О.А.",                       description: "",                                    status: "" },
+    { id_num: 240, code: "4084", title: "ФОП Вінниченський В.В.",                    description: "",                                    status: "м.Теплик" },
+    { id_num: 241, code: "4085", title: "ТОВ «Адміністративно-сервісний центр»",    description: "м-н «Антошка»",                        status: "" },
+    { id_num: 242, code: "4086", title: "«є» кращавне відділення №260/01",           description: "м-н",                                 status: "" },
+    { id_num: 243, code: "4087", title: "кв. Самець Д.В.",                           description: "",                                    status: "" },
+    { id_num: 244, code: "4088", title: "КУ Гайсинський районний мелдичний центр",   description: "",                                    status: "" },
+    { id_num: 245, code: "4089", title: "«Аваль банк»",                              description: "",                                    status: "" },
+    { id_num: 246, code: "4099", title: "ФОП Маленюк І.В.",                          description: "ювелірн. бутік «Мальва»",              status: "" },
+    { id_num: 247, code: "4119", title: "ФОП Рубан О.О.",                            description: "аптека",                              status: "" },
+    { id_num: 248, code: "4121", title: "ФОП Рибачок Т.І.",                          description: "",                                    status: "" },
+    { id_num: 249, code: "4122", title: "кв. Вернисюк Н.П.",                         description: "",                                    status: "" },
+    { id_num: 250, code: "4123", title: "ПП Пташна О.В.",                            description: "",                                    status: "" },
+    { id_num: 251, code: "4163", title: "СПД Тарковська Л.В.",                       description: "",                                    status: "" },
+    { id_num: 252, code: "4164", title: "ПП Колесо Ю.О.",                            description: "",                                    status: "" },
+    { id_num: 253, code: "4165", title: "«Приватбанк» термінал",                     description: "Міський краєзнавчий музей",            status: "" },
+    { id_num: 254, code: "4166", title: "буд. Богдан Л.Ф.",                          description: "",                                    status: "" },
+    { id_num: 255, code: "4167", title: "кв. Денюк О.А.",                            description: "",                                    status: "" },
+    { id_num: 256, code: "4168", title: "Миронівська служба",                        description: "",                                    status: "" },
+    { id_num: 257, code: "4169", title: "«Конекс» аптека",                           description: "",                                    status: "" },
+    { id_num: 258, code: "4188", title: "кв. Шевченко В.Б.",                         description: "",                                    status: "" },
+    { id_num: 259, code: "4299", title: "ФОП Перця В.А.",                            description: "офіс",                               status: "" },
+    { id_num: 260, code: "4300", title: "«Міжнародний інвестиційний банк» банкомат", description: "",                                    status: "" },
+    { id_num: 261, code: "4301", title: "ССТ «Буг»",                                 description: "м-н «Прогрес»",                        status: "" },
+    { id_num: 262, code: "4320", title: "ТОВ «Ірпінь»",                              description: "",                                    status: "" },
+    { id_num: 263, code: "4377", title: "буд. Коваль-чук В.І.",                      description: "м-н «Рошанька»",                      status: "" },
+    { id_num: 264, code: "4378", title: "буд. Заволожної Л.М.",                      description: "",                                    status: "" },
+    { id_num: 265, code: "4379", title: "буд. Заволожної Л.М.",                      description: "",                                    status: "" },
+    { id_num: 266, code: "4380", title: "Свято-Михайлівський храм православної церкви", description: "",                                status: "" },
+    { id_num: 267, code: "4395", title: "ФОП Шпаданок О.В.",                         description: "",                                    status: "" },
+    { id_num: 268, code: "4393", title: "ФОП Яковенко К.П.",                         description: "",                                    status: "" },
+    { id_num: 269, code: "4417", title: "буд. Лещенко Д.П.",                         description: "",                                    status: "" },
+    { id_num: 270, code: "4435", title: "ФОП Кобченко О.М.",                         description: "м-н «Валентинка»",                    status: "" },
+    { id_num: 271, code: "4430", title: "ФОП Кучеренко А.В.",                        description: "м-н «Попрад»",                        status: "" },
+    { id_num: 272, code: "4431", title: "буд. Бугри С.Д.",                           description: "",                                    status: "" },
+    { id_num: 273, code: "4432", title: "«Ломбард Уманський» відділення №13",        description: "",                                    status: "" },
+    { id_num: 274, code: "4433", title: "ТОВ Карпан",                                description: "АЗС",                                 status: "" },
+    { id_num: 275, code: "4434", title: "ФОП Бугри А.М.",                            description: "аптека",                              status: "" },
+    { id_num: 276, code: "4435", title: "ФОП Луцик М.О.",                            description: "м-н «Вишиванка»",                     status: "" },
+    { id_num: 277, code: "4451", title: "ФОП Луцик М.О.",                            description: "м-н «Автозапчастини»",                status: "" },
+    { id_num: 278, code: "4452", title: "буд. Кучеренко А.В.",                       description: "",                                    status: "" },
+    { id_num: 279, code: "4453", title: "кв. Контур Л.М.",                           description: "",                                    status: "" },
+    { id_num: 280, code: "4455", title: "буд. Козловської О.І.",                     description: "«Приватбанк» термінал",               status: "" },
+
+    // ===== Фото 176-267 (сторінка 4) =====
+    { id_num: 176, code: "3185", title: "ПП Алексеєнко Н.Є.",                        description: "м-н «спортивний товар»",               status: "" },
+    { id_num: 177, code: "3186", title: "ПАТ «Укрпдаген»",                           description: "АЗС 01/021",                           status: "Знято" },
+    { id_num: 178, code: "СТС",  title: "ПП Алексеєнко Н.Є.",                        description: "м-н «спортивний товар»",               status: "" },
+    { id_num: 179, code: "3157", title: "ТОВ «Еліксир Кора ЛТД»",                    description: "",                                    status: "" },
+    { id_num: 180, code: "3161", title: "кв. Кучеренко Н.Ф.",                        description: "",                                    status: "" },
+    { id_num: 181, code: "3162", title: "кв. Євсеєнко О.І.",                         description: "",                                    status: "" },
+    { id_num: 182, code: "3188", title: "Гайсинська між лікарняна аптека",           description: "",                                    status: "" },
+    { id_num: 183, code: "3163", title: "кв. Ратошна О.М.",                          description: "",                                    status: "" },
+    { id_num: 184, code: "3476", title: "кв. Крилошан Л.Н.",                         description: "",                                    status: "" },
+    { id_num: 185, code: "3460", title: "кв. Леоненко О.Д.",                         description: "",                                    status: "" },
+    { id_num: 186, code: "3360", title: "ТОВ «Еліксир-Телеком»-Дон",                description: "",                                    status: "" },
+    { id_num: 187, code: "3377", title: "ТОВ «АВ Метал груп»",                      description: "Гайсинська між лікарняна аптека",      status: "" },
+    { id_num: 188, code: "3391", title: "КУ «Гайсинська районна мед. центр первинної допомоги»", description: "",                        status: "" },
+    { id_num: 189, code: "3392", title: "КУ «Гайсинська районна мед. центр первинної допомоги»", description: "",                        status: "" },
+    { id_num: 190, code: "3393", title: "КУ «Гайсинська районна мед. центр первинної допомоги»", description: "",                        status: "" },
+    { id_num: 191, code: "3394", title: "кв. Кучеренко Е.Ю.",                        description: "",                                    status: "" },
+    { id_num: 192, code: "3395", title: "кв. Андрієнко П.В.",                        description: "",                                    status: "" },
+    { id_num: 193, code: "3572", title: "кв. Нестеренко Б.І.",                       description: "",                                    status: "" },
+    { id_num: 194, code: "3606", title: "кв. Коваленко Р.І.",                        description: "",                                    status: "" },
+    { id_num: 195, code: "3574", title: "кв. Мацієнко І.Б.",                         description: "",                                    status: "" },
+    { id_num: 196, code: "3633", title: "КУ Гайсинський районний мелдичний центр",   description: "ветеринарна мічена «Ветсервіс»",       status: "" },
+    { id_num: 197, code: "3635", title: "ПП Новаченко В.В.",                         description: "",                                    status: "пожарка" },
+    { id_num: 198, code: "3638", title: "ДЦЗ «Гайсинський»",                         description: "",                                    status: "" },
+    { id_num: 199, code: "3695", title: "кв. Дворж І.І.",                            description: "",                                    status: "" },
+    { id_num: 200, code: "3696", title: "кв. Мазур М.А.",                            description: "",                                    status: "" },
+    { id_num: 201, code: "3697", title: "ФОП Коваленко І.В.",                        description: "",                                    status: "" },
+    { id_num: 202, code: "3698", title: "ФОП Маєнчик Л.С.",                          description: "АЗС №9",                              status: "" },
+    { id_num: 203, code: "3699", title: "буд. Ронові О.М.",                          description: "",                                    status: "" },
+    { id_num: 204, code: "3703", title: "ПП Нолезначна Р.А.",                        description: "",                                    status: "" },
+    { id_num: 205, code: "3739", title: "буд. Городній В.І.",                        description: "кафе «Експрес»",                      status: "м.Теплик" },
+    { id_num: 206, code: "3740", title: "СПД Тарковська Л.В.",                       description: "",                                    status: "" },
+    { id_num: 207, code: "3743", title: "буд. Тупицька Д.В.",                        description: "",                                    status: "" },
+    { id_num: 208, code: "3774", title: "ПАТ «Концерна Гайсинська Хлібопром»",       description: "",                                    status: "" },
+    { id_num: 209, code: "3808", title: "«Укрпошта»",                                description: "м-н «Ніцше»",                          status: "" },
+    { id_num: 210, code: "3835", title: "ТОВ «Монсанто Україна»",                    description: "",                                    status: "" },
+    { id_num: 211, code: "3836", title: "ФОП народних С.А.",                         description: "",                                    status: "" },
+    { id_num: 212, code: "3840", title: "ФОП Ніколаєнко В.М.",                       description: "",                                    status: "" },
+    { id_num: 213, code: "3841", title: "ПП Богдан «Сроаттек»",                      description: "",                                    status: "" },
+    { id_num: 214, code: "3842", title: "ПП Богдан «Сроаттек»",                      description: "",                                    status: "" },
+    { id_num: 215, code: "3843", title: "У зпр. безперервної виховання «Бутенко та компанія»", description: "Через Верес Сирків",         status: "" },
+    { id_num: 216, code: "3859", title: "Відзначено соціальне Гайсинської Р/ДА",     description: "",                                    status: "" },
+    { id_num: 217, code: "3860", title: "ФОП баз А.В.",                              description: "м-н «Агроснабтара»",                  status: "" },
+    { id_num: 218, code: "3874", title: "Буд'як Н.В.",                               description: "м-н «Протон»",                         status: "" },
+    { id_num: 219, code: "3875", title: "ФОП Зоткевська Н.І.",                       description: "м-н «Айтро Кубок»",                   status: "" },
+    { id_num: 220, code: "3876", title: "ФОП Батернов Ю.Ю.",                         description: "м-н «GRAND-2»",                        status: "" },
+    { id_num: 221, code: "3879", title: "СПД Питанюва Н.М.",                         description: "«Лоці вашого дому»",                  status: "" },
+    { id_num: 222, code: "3882", title: "ТОВ «Алекс»",                               description: "",                                    status: "" },
+    { id_num: 223, code: "3883", title: "ФОП Муденко Н.Б.",                          description: "",                                    status: "" },
+    { id_num: 224, code: "3884", title: "ФОП Телефрюк О.С.",                         description: "",                                    status: "" },
+    { id_num: 225, code: "3904", title: "ФОП Телефрюк О.С.",                         description: "",                                    status: "" },
+    { id_num: 226, code: "3905", title: "ПП Кутик Н.М.",                             description: "",                                    status: "" },
+    { id_num: 227, code: "3906", title: "ФОП Красюк О.М.",                           description: "",                                    status: "" },
+    { id_num: 228, code: "3927", title: "«Приватбанк» термінал",                      description: "",                                    status: "" },
+    { id_num: 229, code: "3928", title: "ТОВ «Атлантік-М»",                          description: "м-н «Рее»",                            status: "" },
+    { id_num: 230, code: "3989", title: "ТОВ «Еліксир-Телеком»",                     description: "",                                    status: "" },
+    { id_num: 231, code: "3990", title: "Переплавська «Нова пошта»",                  description: "",                                    status: "" },
+    { id_num: 232, code: "3991", title: "ФОП Посланчук Р.М.",                        description: "",                                    status: "" },
+    { id_num: 233, code: "4033", title: "ФОП Мансілюк Б.М.",                         description: "",                                    status: "" },
+    { id_num: 234, code: "4034", title: "ФОП",                                        description: "",                                    status: "" },
+    { id_num: 235, code: "3991", title: "буд. Ластрок Н.П.",                         description: "",                                    status: "м.Теплик" },
+    { id_num: 236, code: "4038", title: "«Приватбанк» термінал",                      description: "",                                    status: "" },
+    { id_num: 237, code: "ПП Лексенко Н.Є.", title: "ПП Лексенко Н.Є.",             description: "м-н «Спортивний товар»",               status: "" },
+
+    // ===== Фото 281-333 (сторінка 6) =====
+    { id_num: 281, code: "4471", title: "ПАТ «Шиноліпаген»",                         description: "м-н «Спорт-клас»",                    status: "" },
+    { id_num: 282, code: "4472", title: "ФОП Ніколаєнко О.А.",                       description: "м-н «Спорт-клас»",                    status: "" },
+    { id_num: 283, code: "4473", title: "кв. Кучеренко Н.Ф.",                        description: "",                                    status: "" },
+    { id_num: 284, code: "4474", title: "кв. Єксентонко О.І.",                       description: "",                                    status: "" },
+    { id_num: 285, code: "4475", title: "ТОВ «АВ Метал груп»",                      description: "",                                    status: "" },
+    { id_num: 286, code: "4476", title: "буд. Ратошна О.М.",                         description: "",                                    status: "" },
+    { id_num: 287, code: "4417", title: "ДЦЗ «Гайсинський»",                         description: "Гайсинська між лікарняна аптека",      status: "" },
+    { id_num: 288, code: "4431", title: "КУ «Гайсинська районна мед. центр»",        description: "",                                    status: "" },
+    { id_num: 289, code: "4432", title: "КУ «Гайсинська районна мед. центр»",        description: "",                                    status: "" },
+    { id_num: 290, code: "4433", title: "ветеринарна міжна «Ветсервіс»",             description: "",                                    status: "" },
+    { id_num: 291, code: "4434", title: "ПП Новаченко В.В.",                         description: "",                                    status: "пожарка" },
+    { id_num: 292, code: "4537", title: "ДЦЗ «Гайсинської районний»",                description: "",                                    status: "" },
+    { id_num: 293, code: "4538", title: "ПП Новаченко В.В.",                         description: "",                                    status: "" },
+    { id_num: 294, code: "4539", title: "кв. Коваленко Р.І.",                        description: "",                                    status: "" },
+    { id_num: 295, code: "4540", title: "ФОП Конопаленко І.В.",                      description: "",                                    status: "" },
+    { id_num: 296, code: "4541", title: "ФОП Конопаленко І.В.",                      description: "АЗС №9",                              status: "" },
+    { id_num: 297, code: "4542", title: "буд. Хтроина В.А.",                         description: "м-н",                                 status: "" },
+    { id_num: 298, code: "4543", title: "ПП «і Шик – Оло»",                          description: "",                                    status: "" },
+    { id_num: 299, code: "4545", title: "буд. Велюренко В.В.",                       description: "",                                    status: "" },
+    { id_num: 300, code: "4546", title: "кв. Колонійна А.М.",                        description: "",                                    status: "" },
+    { id_num: 301, code: "4548", title: "буд. Марченко П.В.",                        description: "",                                    status: "" },
+    { id_num: 302, code: "4575", title: "буд. Маринченко А.М.",                      description: "",                                    status: "" },
+    { id_num: 303, code: "4576", title: "кв. Калиник А.С.",                          description: "",                                    status: "" },
+    { id_num: 304, code: "4577", title: "буд. Уперда Г.Г.",                          description: "",                                    status: "" },
+    { id_num: 305, code: "4582", title: "ФОП Ніколаєнко В.М.",                       description: "",                                    status: "" },
+    { id_num: 306, code: "4583", title: "кв. Вертона В.В.",                          description: "",                                    status: "" },
+    { id_num: 307, code: "4584", title: "Гайсинська РА",                              description: "",                                    status: "" },
+    { id_num: 308, code: "4584", title: "ФОП Ніколаєнко Д.С.",                       description: "м-ш",                                 status: "" },
+    { id_num: 309, code: "4601", title: "Гайсинська РА",                              description: "",                                    status: "" },
+    { id_num: 310, code: "4603", title: "Гайсинська РА",                              description: "",                                    status: "" },
+    { id_num: 311, code: "4604", title: "МІКВІ «Леблік»",                             description: "",                                    status: "" },
+    { id_num: 312, code: "4605", title: "ПП Богдан «Сроаттек»",                      description: "",                                    status: "" },
+    { id_num: 313, code: "4611", title: "ПП Богдан «Сроаттек»",                      description: "",                                    status: "" },
+    { id_num: 314, code: "4641", title: "буд. Лкнстовщацький В.П.",                  description: "",                                    status: "" },
+    { id_num: 315, code: "4642", title: "буд. Гаузна Р.Ф.",                          description: "",                                    status: "пожарка" },
+    { id_num: 316, code: "4643", title: "кв. Кучеренко В.В.",                        description: "",                                    status: "" },
+    { id_num: 317, code: "4644", title: "ТОВ «Гайсинський молокозавод»",             description: "",                                    status: "" },
+    { id_num: 318, code: "4645", title: "ФОП Барсукон Ю.Ю.",                         description: "",                                    status: "" },
+    { id_num: 319, code: "4646", title: "ФОП Ченюк О.М.",                            description: "",                                    status: "" },
+    { id_num: 320, code: "4648", title: "ФОП Коваль-чук І.В.",                       description: "",                                    status: "" },
+    { id_num: 321, code: "4649", title: "ФОП Карпілюк К.С.",                         description: "",                                    status: "" },
+    { id_num: 322, code: "4650", title: "ТОВ «Форза» м-н №201",                      description: "інтернет-кафе",                       status: "" },
+    { id_num: 323, code: "4729", title: "буд. Маврусовська О.А.",                    description: "",                                    status: "" },
+    { id_num: 324, code: "4730", title: "буд. Посланчук В.А.",                       description: "",                                    status: "" },
+    { id_num: 325, code: "4731", title: "ВО «Приватбанк»",                           description: "банкомат і термінал",                 status: "" },
+    { id_num: 326, code: "4732", title: "буд. Зінченко В.А.",                        description: "",                                    status: "" },
+    { id_num: 327, code: "4733", title: "буд. Гладополюс А.С.",                      description: "",                                    status: "" },
+    { id_num: 328, code: "4734", title: "ТОВ «Еліксир-Соп» лісопродукти",           description: "",                                    status: "" },
+    { id_num: 329, code: "4735", title: "буд. Посланчук В.А.",                       description: "",                                    status: "" },
+    { id_num: 330, code: "4736", title: "СПД Мейтуш Б.М.",                           description: "",                                    status: "" },
+    { id_num: 331, code: "4796", title: "ПРУ Гайсинська",                             description: "",                                    status: "" },
+    { id_num: 332, code: "4796", title: "буд. Меняйленко С.І.",                      description: "кафе-бар «Вишиті поторгівля»",        status: "" },
+    { id_num: 333, code: "4797", title: "ДЦЗ «Бжелтиповещицький союз»",              description: "кафе-бар «Вишині поторгівля»",        status: "" },
+
+    // ===== Фото 334-362 + УПО 1-20 (сторінка 7) =====
+    { id_num: 334, code: "4798", title: "буд. Плавашецького В.В.",                   description: "",                                    status: "" },
+    { id_num: 335, code: "4799", title: "гараж Семенюк С.А.",                        description: "",                                    status: "" },
+    { id_num: 336, code: "4800", title: "буд. Ковалінька О.П.",                      description: "",                                    status: "" },
+    { id_num: 337, code: "4801", title: "буд. Бойко А.В.",                           description: "",                                    status: "" },
+    { id_num: 338, code: "4872", title: "буд. Полянської Т.С.",                      description: "",                                    status: "" },
+    { id_num: 339, code: "4873", title: "буд. Мазуркевич Т.Л.",                      description: "",                                    status: "" },
+    { id_num: 340, code: "4874", title: "буд. Будяк І.Р.",                           description: "",                                    status: "" },
+    { id_num: 341, code: "4875", title: "ПТ «Ломбард комод»",                        description: "",                                    status: "" },
+    { id_num: 342, code: "4910", title: "«Черкасинтрансгаз»",                        description: "с.Носівці",                           status: "" },
+    { id_num: 343, code: "4931", title: "буд. Кохана І.В.",                          description: "",                                    status: "" },
+    { id_num: 344, code: "4932", title: "буд. Стецюк М.М.",                          description: "",                                    status: "" },
+    { id_num: 345, code: "4933", title: "ФОП Березюк Ю.Г.",                          description: "офіс",                               status: "" },
+    { id_num: 346, code: "4934", title: "ФОП Чайко В.О.",                            description: "офіс",                               status: "" },
+    { id_num: 347, code: "4935", title: "Гайсинська автошкола ТСО",                  description: "",                                    status: "" },
+    { id_num: 348, code: "4936", title: "Гайсинська СЗШ – інтернат",                 description: "",                                    status: "" },
+    { id_num: 349, code: "4937", title: "ФОП голомозний А.О.",                       description: "м-н «Одяг»",                          status: "" },
+    { id_num: 350, code: "4971", title: "ПАТ «Концерни Хлібпром»",                   description: "",                                    status: "" },
+    { id_num: 351, code: "4986", title: "«Приватбанк»",                               description: "",                                    status: "" },
+    { id_num: 352, code: "4987", title: "ФОП Митченко В.В.",                         description: "",                                    status: "" },
+    { id_num: 353, code: "5017", title: "буд. Власюк І.М.",                          description: "",                                    status: "" },
+    { id_num: 354, code: "5018", title: "буд. Семченко В.І.",                        description: "",                                    status: "" },
+    { id_num: 355, code: "5019", title: "буд. Цимбал М.П.",                          description: "",                                    status: "" },
+    { id_num: 356, code: "5020", title: "«Банк Хрещатик»",                           description: "банкомат",                            status: "" },
+    { id_num: 357, code: "5021", title: "ФОП Рубля А.С.",                            description: "Ломбард Соломон",                     status: "" },
+    { id_num: 358, code: "5022", title: "ФОПБ алан А.В.",                            description: "автомобільна мийка",                  status: "" },
+    { id_num: 359, code: "5033", title: "ФОП Шпак А.А.",                             description: "«Шик і блиск»",                       status: "" },
+    { id_num: 360, code: "5037", title: "буд. Галізінського А.Ф.",                   description: "",                                    status: "" },
+    { id_num: 361, code: "5038", title: "буд. Бордзихівської С.М.",                  description: "",                                    status: "" },
+    { id_num: 362, code: "5039", title: "буд. Гирич С.Д.",                           description: "",                                    status: "" },
+
+    // ===== УПО (сторінка 7, окремий розділ) =====
+    { id_num: 1,  code: "УПО-1",  title: "«Ломбард Експрес готівка»",                description: "",                                    status: "УПО" },
+    { id_num: 2,  code: "УПО-2",  title: "кв. Вербовенко О.В.",                     description: "",                                    status: "УПО" },
+    { id_num: 3,  code: "УПО-3",  title: "буд. Казакова В.С.",                      description: "",                                    status: "УПО" },
+    { id_num: 4,  code: "УПО-20", title: "ФОП Подчас В.Ф.",                         description: "«Золото сувеніри»",                    status: "УПО" },
+    { id_num: 5,  code: "УПО-21", title: "ФОП Михайлюк Д.А.",                       description: "«Пан піца»",                          status: "УПО" },
+    { id_num: 6,  code: "УПО-22", title: "ТОВ «Цехаве Корм ЛТД»",                  description: "",                                    status: "УПО" },
+    { id_num: 7,  code: "УПО-23", title: "кв. Черніченко Н.І.",                     description: "",                                    status: "УПО" },
+    { id_num: 8,  code: "УПО-24", title: "кв. Гребенюк С.М.",                       description: "",                                    status: "УПО" },
+    { id_num: 9,  code: "УПО-25", title: "буд. Яковенко С.В.",                      description: "",                                    status: "УПО" },
+    { id_num: 10, code: "УПО-40", title: "кв. Гетьман Я.В.",                        description: "",                                    status: "УПО" },
+    { id_num: 11, code: "УПО-41", title: "ФГ Власюк О.Д.",                          description: "",                                    status: "УПО" },
+    { id_num: 12, code: "УПО-42", title: "ТОВ «Ясен-Поділля»",                      description: "",                                    status: "УПО" },
+    { id_num: 13, code: "УПО-73", title: "ФОП Кабаровський В.О.",                   description: "м-н «Будівельник»",                   status: "УПО" },
+    { id_num: 14, code: "УПО-74", title: "ФГ «Чиста криниця»",                      description: "",                                    status: "УПО" },
+    { id_num: 15, code: "УПО-75", title: "СПД Ковальчук С.М.",                      description: "«Кисляцька криниця»",                 status: "УПО" },
+    { id_num: 16, code: "УПО-76", title: "«Ощадбанк»",                               description: "",                                    status: "УПО" },
+    { id_num: 17, code: "УПО-77", title: "«Ощадбанк» банкомат",                     description: "",                                    status: "УПО" },
+    { id_num: 18, code: "УПО-78", title: "«Ощадбанк»",                               description: "",                                    status: "УПО" },
+    { id_num: 19, code: "УПО-79", title: "Гайсинське лісове господарство",          description: "",                                    status: "УПО" },
+    { id_num: 20, code: "УПО-123", title: "ТОВ «НК Зоря Поділля»",                  description: "",                                    status: "УПО" },
   ];
 
   const TOTAL = data.length;
@@ -306,9 +753,12 @@
   const listEl     = document.getElementById('cardList');
   const emptyState = document.getElementById('emptyState');
   const countEl    = document.getElementById('countDisplay');
-  const filterBtn  = document.getElementById('filterZnато');
+  const totalLabel = document.getElementById('totalLabel');
+  const filterBtn  = document.getElementById('filterZnato');
+  const filterUpoBtn = document.getElementById('filterUpo');
 
   let filterZnatoActive = false;
+  let filterUpoActive = false;
   let debounceTimer = null;
 
   function escHtml(s) {
@@ -325,7 +775,7 @@
 
   function isZnato(item) { return item.status === 'Знято'; }
 
-  function renderCards(query, onlyZnato) {
+  function renderCards(query, onlyZnato, onlyUpo) {
     const q = query.trim().toLowerCase();
     const fragment = document.createDocumentFragment();
     let visible = 0;
@@ -335,9 +785,11 @@
       const codeMatch  = item.code.toLowerCase().includes(q);
       const titleMatch = item.title.toLowerCase().includes(q);
       const descMatch  = item.description.toLowerCase().includes(q);
-      const matches    = !q || codeMatch || titleMatch || descMatch;
-      const passFilter = !onlyZnato || isZnato(item);
-      if (!matches || !passFilter) return;
+      const statusMatch = item.status.toLowerCase().includes(q);
+      const matches    = !q || codeMatch || titleMatch || descMatch || statusMatch;
+      const passZnato  = !onlyZnato || isZnato(item);
+      const passUpo    = !onlyUpo || item.status === 'УПО';
+      if (!matches || !passZnato || !passUpo) return;
       visible++;
 
       const znato = isZnato(item);
@@ -386,29 +838,34 @@
   input.addEventListener('input', () => {
     clearBtn.style.display = input.value ? 'block' : 'none';
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => renderCards(input.value, filterZnatoActive), 80);
+    debounceTimer = setTimeout(() => renderCards(input.value, filterZnatoActive, filterUpoActive), 80);
   });
 
   clearBtn.addEventListener('click', () => {
     input.value = '';
     clearBtn.style.display = 'none';
-    renderCards('', filterZnatoActive);
+    renderCards('', filterZnatoActive, filterUpoActive);
     input.focus();
   });
 
   filterBtn.addEventListener('click', () => {
     filterZnatoActive = !filterZnatoActive;
     filterBtn.classList.toggle('active', filterZnatoActive);
-    filterBtn.textContent = filterZnatoActive ? '✕ Скасувати фільтр' : 'Тільки «Знято»';
-    renderCards(input.value, filterZnatoActive);
+    filterBtn.textContent = filterZnatoActive ? '✕ Скасувати' : 'Тільки «Знято»';
+    renderCards(input.value, filterZnatoActive, filterUpoActive);
+  });
+
+  filterUpoBtn.addEventListener('click', () => {
+    filterUpoActive = !filterUpoActive;
+    filterUpoBtn.classList.toggle('active', filterUpoActive);
+    filterUpoBtn.textContent = filterUpoActive ? '✕ УПО' : 'УПО';
+    renderCards(input.value, filterZnatoActive, filterUpoActive);
   });
 
   // init
-  document.getElementById('countDisplay').textContent = TOTAL;
-  document.querySelector('.stats-bar span:last-of-type + span, .stats-bar span:nth-child(4)');
-  // fix total label
-  document.querySelectorAll('.stats-bar span')[2].textContent = 'із ' + TOTAL;
-  renderCards('', false);
+  totalLabel.textContent = 'із ' + TOTAL;
+  countEl.textContent = TOTAL;
+  renderCards('', false, false);
   </script>
 </body>
 </html>
