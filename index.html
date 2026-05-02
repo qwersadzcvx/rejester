@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Реєстр орендарів</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Unbounded:wght@300;400;600&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --accent: #3b82f6;
+      --bg: #0a0d14;
+      --surface: #111520;
+      --surface2: #181d2e;
+      --border: #222840;
+      --text: #dde4f0;
+      --text-dim: #6b7a99;
+      --znято: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Manrope', sans-serif;
+      min-height: 100vh;
+      background-image: radial-gradient(ellipse 90% 35% at 50% 0%, rgba(59,130,246,0.07) 0%, transparent 65%);
+    }
+
+    .header {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(10,13,20,0.93);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px 12px;
+    }
+    .header-title {
+      font-family: 'Unbounded', sans-serif;
+      font-weight: 600; font-size: 12px;
+      letter-spacing: 0.13em; color: var(--text-dim);
+      text-transform: uppercase; margin-bottom: 10px;
+    }
+    .header-title span { color: var(--accent); }
+
+    .search-wrap { position: relative; }
+    .search-icon {
+      position: absolute; left: 12px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim); pointer-events: none;
+    }
+    #searchInput {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 40px 10px 38px;
+      color: var(--text);
+      font-family: 'Manrope', sans-serif;
+      font-size: 15px; outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    #searchInput:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+    }
+    #searchInput::placeholder { color: var(--text-dim); }
+    #clearBtn {
+      position: absolute; right: 10px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none;
+      color: var(--text-dim); cursor: pointer;
+      padding: 4px; border-radius: 50%;
+      display: none; line-height: 1;
+      transition: color .15s; font-size: 14px;
+    }
+    #clearBtn:hover { color: var(--text); }
+
+    .stats-bar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 16px;
+      font-size: 12px; color: var(--text-dim);
+      border-bottom: 1px solid var(--border);
+    }
+    .stats-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; color: var(--accent); font-weight: 700;
+    }
+    .filter-btn {
+      margin-left: auto;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      border-radius: 6px; padding: 3px 10px;
+      font-size: 11px; cursor: pointer;
+      transition: all .15s;
+      font-family: 'Manrope', sans-serif;
+    }
+    .filter-btn.active, .filter-btn:hover {
+      border-color: var(--znято); color: var(--znято);
+    }
+
+    #cardList {
+      padding: 12px 12px 50px;
+      display: flex; flex-direction: column; gap: 7px;
+      max-width: 680px; margin: 0 auto;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex; gap: 11px;
+      align-items: flex-start;
+      transition: border-color .15s, background .15s, transform .15s;
+      position: relative; overflow: hidden;
+    }
+    .card::before {
+      content: ''; position: absolute;
+      left: 0; top: 0; bottom: 0; width: 3px;
+      background: transparent;
+      transition: background .2s;
+    }
+    .card:hover {
+      border-color: #2e3a55;
+      background: var(--surface2);
+      transform: translateY(-1px);
+    }
+    .card.highlighted {
+      border-color: var(--accent);
+      background: rgba(59,130,246,0.06);
+      box-shadow: 0 0 0 1px rgba(59,130,246,0.25), 0 4px 18px rgba(59,130,246,0.1);
+    }
+    .card.highlighted::before { background: var(--accent); }
+    .card.znято { opacity: 0.55; }
+    .card.znято::before { background: var(--znято); }
+    .card.znято .card-title {
+      text-decoration: line-through;
+      text-decoration-color: rgba(239,68,68,0.45);
+    }
+
+    .card-seq {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; color: var(--text-dim);
+      min-width: 20px; padding-top: 3px; text-align: right;
+    }
+    .card-body { flex: 1; min-width: 0; }
+    .card-top {
+      display: flex; align-items: center;
+      gap: 8px; flex-wrap: wrap; margin-bottom: 3px;
+    }
+    .card-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px; font-weight: 700;
+      color: var(--accent); letter-spacing: .05em;
+      background: rgba(59,130,246,0.1);
+      padding: 1px 7px; border-radius: 5px;
+      border: 1px solid rgba(59,130,246,0.22);
+      flex-shrink: 0;
+    }
+    .card-title {
+      font-size: 13.5px; font-weight: 600;
+      color: var(--text);
+      white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-desc {
+      font-size: 11.5px; color: var(--text-dim); margin-top: 2px;
+    }
+    .card-status { flex-shrink: 0; padding-top: 2px; }
+    .badge-znято {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px; font-weight: 600;
+      letter-spacing: .07em;
+      color: var(--znято);
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.28);
+      border-radius: 5px; padding: 2px 7px;
+    }
+    .badge-note {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; color: var(--text-dim);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 5px; padding: 2px 6px;
+    }
+
+    mark {
+      background: rgba(59,130,246,0.28);
+      color: inherit; border-radius: 2px; padding: 0 1px;
+    }
+
+    #emptyState {
+      display: none; text-align: center;
+      padding: 60px 20px; color: var(--text-dim);
+    }
+    #emptyState .empty-icon { font-size: 38px; margin-bottom: 12px; }
+    #emptyState p { font-size: 14px; }
+
+    .card { scroll-margin-top: 115px; }
+
+    @media (min-width: 480px) {
+      .card-title { font-size: 14.5px; }
+      .card-code { font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-title">Реєстр <span>орендарів</span> &mdash; сторінка 2</div>
+    <div class="search-wrap">
+      <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input id="searchInput" type="search" placeholder="Пошук за кодом або назвою…" autocomplete="off" />
+      <button id="clearBtn" aria-label="Очистити">✕</button>
+    </div>
+  </header>
+
+  <div class="stats-bar">
+    <span>Показано:</span>
+    <span class="stats-count" id="countDisplay">65</span>
+    <span>із 65</span>
+    <button class="filter-btn" id="filterZnато">Тільки «Знято»</button>
+  </div>
+
+  <main id="cardList"></main>
+  <div id="emptyState">
+    <div class="empty-icon">🔍</div>
+    <p>Нічого не знайдено. Спробуйте інший запит.</p>
+  </div>
+
+  <script>
+  const data = [
+    { id_num: 58,  code: "582",  title: "ПП Тарковський",                        description: "м-н «Фламінго»",              status: "" },
+    { id_num: 59,  code: "583",  title: "КП «Побутсервіс»",                      description: "офіс Чекалюк",                status: "" },
+    { id_num: 60,  code: "586",  title: "ПП Васільченко В.В.",                   description: "кафе «Сдем»",                 status: "Знято" },
+    { id_num: 61,  code: "588",  title: "Фонд соціального страхування",          description: "",                             status: "Знято" },
+    { id_num: 62,  code: "797",  title: "«Приватбанк»",                          description: "",                             status: "1 арт" },
+    { id_num: 63,  code: "798",  title: "Архів районний трудовий",               description: "",                             status: "" },
+    { id_num: 64,  code: "800",  title: "УПФУ гараж",                            description: "",                             status: "" },
+    { id_num: 65,  code: "801",  title: "кв. Заїченко О.М.",                     description: "",                             status: "" },
+    { id_num: 66,  code: "1096", title: "ФОП Лук'ян М.Ф.",                      description: "м-н «Містер»",                status: "" },
+    { id_num: 67,  code: "1146", title: "«Індекс Банк»",                         description: "",                             status: "Знято" },
+    { id_num: 68,  code: "1147", title: "ПП Заїченко О.М.",                      description: "ювелірний м-н «Аурум»",       status: "" },
+    { id_num: 69,  code: "1149", title: "Упр. газового господарства",            description: "",                             status: "" },
+    { id_num: 70,  code: "1150", title: "ТОВ «Атойл»",                           description: "АЗС №15, 21",                 status: "Знято" },
+    { id_num: 71,  code: "1151", title: "ВАТ «Укрнафта»",                       description: "АЗС №7",                      status: "" },
+    { id_num: 72,  code: "1152", title: "ДК «Укравтотрансгаз» АГІКС-1",         description: "",                             status: "Знято" },
+    { id_num: 73,  code: "1200", title: "ПП Колос Ю.О.",                         description: "м-н «Світ рослин»",           status: "Знято" },
+    { id_num: 74,  code: "1220", title: "кв. Шпак М.Я.",                         description: "",                             status: "" },
+    { id_num: 75,  code: "1221", title: "СБУ приміщення",                        description: "",                             status: "Знято" },
+    { id_num: 76,  code: "1382", title: "ПП Чорноморець СТ",                     description: "ринок Торг «1000 дрібниць»",  status: "Знято" },
+    { id_num: 77,  code: "1488", title: "ПП Вовк М.А.",                          description: "фотостудія «Ф-клас»",         status: "" },
+    { id_num: 78,  code: "1489", title: "ПП Мусієнко С.А.",                      description: "кафе",                        status: "" },
+    { id_num: 79,  code: "1490", title: "ВП УМВС КЗВ",                           description: "",                             status: "" },
+    { id_num: 80,  code: "1512", title: "ФОП Шишковська В.П.",                   description: "м-н «Уют»",                   status: "" },
+    { id_num: 81,  code: "1514", title: "Райсуд ТУ ДСА у Вінницькій обл.",      description: "",                             status: "" },
+    { id_num: 82,  code: "1547", title: "СПД Гречко Т.В.",                       description: "м-н «Київський»",             status: "" },
+    { id_num: 83,  code: "1548", title: "СПД Гречко Т.В.",                       description: "м-н «Темп»",                  status: "Знято" },
+    { id_num: 84,  code: "1550", title: "кв. Кашівський П.П.",                   description: "",                             status: "" },
+    { id_num: 85,  code: "1573", title: "кв. Гетьман В.Г.",                      description: "",                             status: "" },
+    { id_num: 86,  code: "1622", title: "КП «Гайсинпобут»",                      description: "",                             status: "" },
+    { id_num: 87,  code: "1623", title: "«Трибуна праці» редакція газети",       description: "",                             status: "" },
+    { id_num: 88,  code: "1650", title: "ФОП Меланич О.В.",                      description: "м-н «Світ подарунків»",       status: "" },
+    { id_num: 89,  code: "1692", title: "ПП Белова С.Ф.",                        description: "склад",                       status: "" },
+    { id_num: 90,  code: "1709", title: "ТОВ ПК «Зоря Поділля»",                description: "",                             status: "" },
+    { id_num: 91,  code: "1772", title: "ПП Белова С.Ф.",                        description: "м-н «Будекспрес»",            status: "" },
+    { id_num: 92,  code: "1785", title: "кв. Суменкова С.М.",                    description: "",                             status: "" },
+    { id_num: 93,  code: "1817", title: "ТОВ «Атойл»",                           description: "АЗС №35",                     status: "" },
+    { id_num: 94,  code: "1818", title: "ПП Кащенко П.М.",                       description: "м-н «Одяг та взуття»",        status: "Знято" },
+    { id_num: 95,  code: "1819", title: "ПП Швець",                              description: "салон краси «Гетьман»",       status: "" },
+    { id_num: 96,  code: "1901", title: "кв. Павлавська Н.Т.",                   description: "",                             status: "" },
+    { id_num: 97,  code: "1978", title: "ПП Хитрук Н.Л.",                        description: "м-н «Сантехнік»",             status: "" },
+    { id_num: 98,  code: "1980", title: "ПП Гелевенко",                          description: "м-н «Модесса»",               status: "Знято" },
+    { id_num: 99,  code: "1985", title: "ПП Іщук Н.С.",                          description: "м-н «Елен»",                  status: "Знято" },
+    { id_num: 100, code: "1987", title: "ПП Іщук Н.С.",                          description: "м-н «Дені»",                  status: "2 км" },
+    { id_num: 101, code: "1988", title: "ПП Приходько Н.В.",                     description: "м-н",                         status: "" },
+    { id_num: 102, code: "1989", title: "Гараж Бордзахівський А.С.",             description: "",                             status: "Знято" },
+    { id_num: 103, code: "1990", title: "ФОП Посдничук В.А.",                    description: "",                             status: "" },
+    { id_num: 104, code: "1991", title: "Рай СТ",                                description: "",                             status: "" },
+    { id_num: 105, code: "1992", title: "КС «Перше кредитне товариство»",        description: "",                             status: "Знято" },
+    { id_num: 106, code: "1994", title: "ПП Пархонюк О.О.",                      description: "м-н «Автомагазин»",           status: "" },
+    { id_num: 107, code: "2031", title: "МДЛВМ Ветеринарна медицина",            description: "",                             status: "" },
+    { id_num: 108, code: "2053", title: "ПП Колесник В.І.",                      description: "м-н",                         status: "" },
+    { id_num: 109, code: "2057", title: "ФОП Коберник О.Д.",                     description: "склад",                       status: "" },
+    { id_num: 110, code: "2058", title: "ТОВ «Атойл»",                           description: "АЗС №13",                     status: "Знято" },
+    { id_num: 111, code: "2062", title: "ПП Скоропадський А.П.",                 description: "стомат. кабінет",             status: "" },
+    { id_num: 112, code: "2063", title: "ФОП Федорут С.О.",                      description: "склад",                       status: "" },
+    { id_num: 113, code: "2107", title: "ПП Рена К.В.",                          description: "м-н «Будцентр»",              status: "" },
+    { id_num: 114, code: "2108", title: "ПП Петух П.С.",                         description: "м-н",                         status: "" },
+    { id_num: 115, code: "2110", title: "ВАТ «Укртелеком» ЦТЕПМ «2»",           description: "",                             status: "" },
+    { id_num: 116, code: "2112", title: "«Банк Хрещатик»",                       description: "",                             status: "Знято" },
+    { id_num: 117, code: "2118", title: "кв. Антоненко С.Ф.",                    description: "",                             status: "" },
+    { id_num: 118, code: "2119", title: "Нафтова компанія «Народна»",            description: "",                             status: "" },
+    { id_num: 119, code: "2132", title: "МРЕВ",                                  description: "",                             status: "" },
+    { id_num: 120, code: "2133", title: "СПД Павліченко",                        description: "м-н «Світ TV»",               status: "м.Теплик" },
+    { id_num: 121, code: "2134", title: "ЦРЛ м. Теплик",                         description: "",                             status: "м.Теплик" },
+    { id_num: 122, code: "2136", title: "СПД Безносюк І.І.",                     description: "м-н «Анастасія»",             status: "м.Теплик" },
+  ];
+
+  const TOTAL = data.length;
+  const input      = document.getElementById('searchInput');
+  const clearBtn   = document.getElementById('clearBtn');
+  const listEl     = document.getElementById('cardList');
+  const emptyState = document.getElementById('emptyState');
+  const countEl    = document.getElementById('countDisplay');
+  const filterBtn  = document.getElementById('filterZnато');
+
+  let filterZnatoActive = false;
+  let debounceTimer = null;
+
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function hlText(text, q) {
+    if (!q) return escHtml(text);
+    const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
+    return escHtml(text).replace(re, '<mark>$1</mark>');
+  }
+
+  function isZnato(item) { return item.status === 'Знято'; }
+
+  function renderCards(query, onlyZnato) {
+    const q = query.trim().toLowerCase();
+    const fragment = document.createDocumentFragment();
+    let visible = 0;
+    let firstHighlight = null;
+
+    data.forEach(item => {
+      const codeMatch  = item.code.toLowerCase().includes(q);
+      const titleMatch = item.title.toLowerCase().includes(q);
+      const descMatch  = item.description.toLowerCase().includes(q);
+      const matches    = !q || codeMatch || titleMatch || descMatch;
+      const passFilter = !onlyZnato || isZnato(item);
+      if (!matches || !passFilter) return;
+      visible++;
+
+      const znato = isZnato(item);
+      const isHighlighted = q && codeMatch && !firstHighlight;
+
+      const card = document.createElement('div');
+      card.className = 'card' + (znato ? ' znято' : '') + (isHighlighted ? ' highlighted' : '');
+
+      if (isHighlighted) firstHighlight = card;
+
+      const statusHTML = znato
+        ? `<div class="card-status"><span class="badge-znято">Знято</span></div>`
+        : (item.status
+            ? `<div class="card-status"><span class="badge-note">${escHtml(item.status)}</span></div>`
+            : '');
+
+      card.innerHTML = `
+        <div class="card-seq">${item.id_num}</div>
+        <div class="card-body">
+          <div class="card-top">
+            <span class="card-code">${hlText(item.code, q)}</span>
+            <span class="card-title">${hlText(item.title, q)}</span>
+          </div>
+          ${item.description ? `<div class="card-desc">${hlText(item.description, q)}</div>` : ''}
+        </div>
+        ${statusHTML}
+      `;
+      fragment.appendChild(card);
+    });
+
+    listEl.innerHTML = '';
+    listEl.appendChild(fragment);
+
+    countEl.textContent = visible;
+    const empty = visible === 0;
+    emptyState.style.display = empty ? 'block' : 'none';
+    listEl.style.display = empty ? 'none' : 'flex';
+
+    if (firstHighlight) {
+      requestAnimationFrame(() =>
+        firstHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      );
+    }
+  }
+
+  input.addEventListener('input', () => {
+    clearBtn.style.display = input.value ? 'block' : 'none';
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => renderCards(input.value, filterZnatoActive), 80);
+  });
+
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    clearBtn.style.display = 'none';
+    renderCards('', filterZnatoActive);
+    input.focus();
+  });
+
+  filterBtn.addEventListener('click', () => {
+    filterZnatoActive = !filterZnatoActive;
+    filterBtn.classList.toggle('active', filterZnatoActive);
+    filterBtn.textContent = filterZnatoActive ? '✕ Скасувати фільтр' : 'Тільки «Знято»';
+    renderCards(input.value, filterZnatoActive);
+  });
+
+  // init
+  document.getElementById('countDisplay').textContent = TOTAL;
+  document.querySelector('.stats-bar span:last-of-type + span, .stats-bar span:nth-child(4)');
+  // fix total label
+  document.querySelectorAll('.stats-bar span')[2].textContent = 'із ' + TOTAL;
+  renderCards('', false);
+  </script>
+</body>
+</html>
