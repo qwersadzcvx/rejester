@@ -10,6 +10,7 @@
   <style>
     :root {
       --accent: #3b82f6;
+      --accent2: #f59e0b;
       --bg: #0a0d14;
       --surface: #111520;
       --surface2: #181d2e;
@@ -77,13 +78,13 @@
       padding: 7px 16px;
       font-size: 12px; color: var(--text-dim);
       border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
     }
     .stats-count {
       font-family: 'JetBrains Mono', monospace;
       font-size: 13px; color: var(--accent); font-weight: 700;
     }
     .filter-btn {
-      margin-left: auto;
       background: none;
       border: 1px solid var(--border);
       color: var(--text-dim);
@@ -92,13 +93,43 @@
       transition: all .15s;
       font-family: 'Manrope', sans-serif;
     }
-    .filter-btn.active, .filter-btn:hover {
+    .filter-btn.active-znato, .filter-btn.active-znato:hover {
       border-color: var(--znято); color: var(--znято);
+    }
+    .filter-btn.active-upo, .filter-btn.active-upo:hover {
+      border-color: var(--accent2); color: var(--accent2);
+    }
+    .filter-btn:not(.active-znato):not(.active-upo):hover {
+      border-color: #4a5580; color: var(--text);
     }
     #cardList {
       padding: 12px 12px 50px;
       display: flex; flex-direction: column; gap: 7px;
       max-width: 680px; margin: 0 auto;
+    }
+    .section-header {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 8px 12px;
+      border-radius: 8px;
+      margin-top: 6px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-header.gaisyn {
+      color: var(--accent);
+      background: rgba(59,130,246,0.08);
+      border: 1px solid rgba(59,130,246,0.2);
+    }
+    .section-header.upo {
+      color: var(--accent2);
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.2);
+    }
+    .section-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; opacity: 0.7;
     }
     .card {
       background: var(--surface);
@@ -127,8 +158,9 @@
       box-shadow: 0 0 0 1px rgba(59,130,246,0.25), 0 4px 18px rgba(59,130,246,0.1);
     }
     .card.highlighted::before { background: var(--accent); }
+    .card.upo-card::before { background: rgba(245,158,11,0.5); }
     .card.znято { opacity: 0.55; }
-    .card.znято::before { background: var(--znято); }
+    .card.znято::before { background: var(--znято) !important; }
     .card.znято .card-title {
       text-decoration: line-through;
       text-decoration-color: rgba(239,68,68,0.45);
@@ -151,6 +183,11 @@
       padding: 1px 7px; border-radius: 5px;
       border: 1px solid rgba(59,130,246,0.22);
       flex-shrink: 0;
+    }
+    .card-code.upo-code {
+      color: var(--accent2);
+      background: rgba(245,158,11,0.1);
+      border-color: rgba(245,158,11,0.25);
     }
     .card-title {
       font-size: 13.5px; font-weight: 600;
@@ -196,7 +233,6 @@
   </style>
 </head>
 <body>
-
   <header class="header">
     <div class="header-title">Реєстр <span>орендарів</span></div>
     <div class="search-wrap">
@@ -207,15 +243,14 @@
       <button id="clearBtn" aria-label="Очистити">✕</button>
     </div>
   </header>
-
   <div class="stats-bar">
     <span>Показано:</span>
     <span class="stats-count" id="countDisplay">0</span>
     <span id="totalLabel">із 0</span>
-    <button class="filter-btn" id="filterZnato">Тільки «Знято»</button>
-    <button class="filter-btn" id="filterUpo" style="margin-left:4px">УПО</button>
+    <button class="filter-btn" id="filterZnato" style="margin-left:auto">Тільки «Знято»</button>
+    <button class="filter-btn" id="filterUpo">Тільки УПО</button>
+    <button class="filter-btn" id="filterGaisyn">Тільки Гайсин</button>
   </div>
-
   <main id="cardList"></main>
   <div id="emptyState">
     <div class="empty-icon">🔍</div>
@@ -223,569 +258,950 @@
   </div>
 
   <script>
-  const data = [
-    // ===== Сторінка 8 (рядки 21–72) =====
-    { id_num: 21,  code: "124",  title: "«Приватбанк»",                              description: "",                                    status: "" },
-    { id_num: 22,  code: "125",  title: "ФОП Цокур В.Г.",                            description: "«Едельвейс»",                         status: "" },
-    { id_num: 23,  code: "126",  title: "ФОП Марчук Р.П.",                           description: "м-н «Світ секунд Хенда»",             status: "Знято" },
-    { id_num: 24,  code: "176",  title: "ФОП Петрівська Т.В.",                       description: "Нова пошта",                          status: "" },
-    { id_num: 25,  code: "184",  title: "Гіппократ стоматологічний центр",           description: "",                                    status: "" },
-    { id_num: 26,  code: "208",  title: "ПП Невідомий В.В.",                         description: "кафе «Меркурій»",                     status: "" },
-    { id_num: 27,  code: "209",  title: "ФОП Станішевський Д.П.",                   description: "«В мережі»",                          status: "" },
-    { id_num: 28,  code: "217",  title: "буд. Голянтус О.М.",                        description: "",                                    status: "" },
-    { id_num: 29,  code: "216",  title: "ФОП Луцик В.А.",                            description: "кафе «Млин»",                         status: "" },
-    { id_num: 30,  code: "247",  title: "кв. Плаксіна М.Г.",                         description: "",                                    status: "" },
-    { id_num: 31,  code: "248",  title: "Стоматологічний центр Гіпократ-Щуки О.В.", description: "",                                    status: "пожарка" },
-    { id_num: 32,  code: "249",  title: "ФОП Ковтун Л.М.",                           description: "м-н «Техніка»",                       status: "Знято" },
-    { id_num: 33,  code: "250",  title: "ТОВ «Зодчий офіс»",                        description: "",                                    status: "" },
-    { id_num: 34,  code: "251",  title: "ФОП Василевський Г.В.",                    description: "«Телефони»",                          status: "Знято" },
-    { id_num: 35,  code: "252",  title: "ФОП Ямковий В.Д.",                          description: "м-н «Чоловіча та жіноча білизна»",    status: "" },
-    { id_num: 36,  code: "270",  title: "ФОП Дутко І.Б.",                            description: "м-н «Комп'ютерний всесвіт»",          status: "" },
-    { id_num: 37,  code: "276",  title: "ФОП Пільганчук О.Д.",                      description: "м-н «Марго»",                         status: "" },
-    { id_num: 38,  code: "277",  title: "ФОП Поплавська М.М.",                      description: "м-н «Жжук»",                          status: "Знято" },
-    { id_num: 39,  code: "278",  title: "кв. Кривого О.О.",                          description: "",                                    status: "" },
-    { id_num: 40,  code: "279",  title: "буд. Гуро А.М.",                            description: "",                                    status: "" },
-    { id_num: 41,  code: "303",  title: "ТОВ «Катран»",                             description: "АЗС",                                 status: "ТОВ ТАН-ОЙЛ" },
-    { id_num: 42,  code: "304",  title: "ФОП Деревʼяненко І.В.",                    description: "м-н «Техноярмарок»",                  status: "" },
-    { id_num: 43,  code: "305",  title: "ФОП Пендюк М.В.",                           description: "",                                    status: "" },
-    { id_num: 44,  code: "333",  title: "ФОП Немировська С.М.",                     description: "м-н «Світлана. Валентина»",           status: "" },
-    { id_num: 45,  code: "334",  title: "буд. Паурчак В.Г.",                         description: "",                                    status: "" },
-    { id_num: 46,  code: "335",  title: "кв. Зарипова В.Б.",                         description: "",                                    status: "" },
-    { id_num: 47,  code: "336",  title: "кв. Саблук В.Г.",                           description: "",                                    status: "" },
-    { id_num: 48,  code: "337",  title: "кв. Борзихівської С.М.",                   description: "",                                    status: "" },
-    { id_num: 49,  code: "338",  title: "кв. Любомської Н.В.",                      description: "",                                    status: "" },
-    { id_num: 50,  code: "339",  title: "буд. Підлипняка В.В.",                     description: "",                                    status: "" },
-    { id_num: 51,  code: "340",  title: "буд. Поляк І.В.",                           description: "",                                    status: "" },
-    { id_num: 52,  code: "341",  title: "буд. Кугот Л.В.",                           description: "",                                    status: "" },
-    { id_num: 53,  code: "342",  title: "ФОП Сивак І.А.",                            description: "м-н «Лимон»",                         status: "" },
-    { id_num: 54,  code: "424",  title: "СТОВ «Ренет»",                              description: "",                                    status: "м.Теплик" },
-    { id_num: 55,  code: "450",  title: "«Центр зайнятості»",                        description: "",                                    status: "пожарка" },
-    { id_num: 56,  code: "451",  title: "ФОП Подчас В.Ф.",                          description: "м-н «Золото»",                        status: "" },
-    { id_num: 57,  code: "452",  title: "ФОП Подчас В.Ф.",                          description: "м-н «Золоте сяйво»",                  status: "" },
-    { id_num: 58,  code: "453",  title: "Музей М.Д.Леонтовича",                     description: "",                                    status: "" },
-    { id_num: 59,  code: "454",  title: "«Тегра Україна ЛТД»",                      description: "",                                    status: "пожарка" },
-    { id_num: 60,  code: "470",  title: "Музей М.Д.Леонтовича",                     description: "",                                    status: "пожарка" },
-    { id_num: 61,  code: "471",  title: "буд. Голомовзий О.О.",                     description: "",                                    status: "" },
-    { id_num: 62,  code: "472",  title: "буд. Яковенко В.В.",                       description: "",                                    status: "" },
-    { id_num: 63,  code: "473",  title: "кв. Салтана Н.М.",                          description: "",                                    status: "" },
-    { id_num: 64,  code: "474",  title: "кв. Штейман Р.А.",                          description: "",                                    status: "" },
-    { id_num: 65,  code: "520",  title: "буд. Безносенка О.Ф.",                     description: "",                                    status: "" },
-    { id_num: 66,  code: "521",  title: "буд. Чорної О.М.",                          description: "",                                    status: "" },
-    { id_num: 67,  code: "522",  title: "буд. Должкевич Л.Б.",                      description: "",                                    status: "" },
-    { id_num: 68,  code: "523",  title: "ФОП Браславського Ю.С.",                   description: "АЗС",                                 status: "" },
-    { id_num: 69,  code: "590",  title: "буд. Юрченко В.А.",                        description: "",                                    status: "" },
-    { id_num: 70,  code: "591",  title: "буд. Кучер Т.В.",                           description: "",                                    status: "" },
-    { id_num: 71,  code: "592",  title: "буд. Планета Т.П.",                         description: "",                                    status: "" },
-    { id_num: 72,  code: "593",  title: "АППБ «Аваль банк»",                        description: "",                                    status: "м.Теплик" },
-
-    // ===== Сторінка 9 (рядки 73–125) =====
-    { id_num: 73,  code: "594",  title: "Ломбард «Комод» «Горбач О.О. і Компанія»", description: "",                                   status: "" },
-    { id_num: 74,  code: "595",  title: "ТОВ «Ла-Він»",                             description: "АІЗС",                               status: "Знято / зміна марки" },
-    { id_num: 75,  code: "596",  title: "УПФУ в Теплицькому р-ні",                  description: "",                                    status: "" },
-    { id_num: 76,  code: "597",  title: "ДП «Бджілянський спиртовий завод»",        description: "склад",                              status: "Знято" },
-    { id_num: 77,  code: "598",  title: "Центр зайнятості Гайсинський районний",    description: "",                                    status: "" },
-    { id_num: 78,  code: "599",  title: "Гайсинська між лікарняна аптека №2",      description: "",                                    status: "" },
-    { id_num: 79,  code: "600",  title: "ТОВ «НК «Зоря Поділля»",                  description: "зоотехнічний відділ",                 status: "" },
-    { id_num: 80,  code: "601",  title: "ТОВ «НК «Зоря Поділля»",                  description: "засоби захисту рослин",               status: "" },
-    { id_num: 81,  code: "602",  title: "ТОВ «НК «Зоря Поділля»",                  description: "склад прекурсорів",                   status: "" },
-    { id_num: 82,  code: "603",  title: "ФОП Панфіл О.С.",                          description: "",                                    status: "" },
-    { id_num: 83,  code: "604",  title: "ФОП Голуб Т.І.",                           description: "м-н «Мотолідер»",                     status: "" },
-    { id_num: 84,  code: "605",  title: "ФОП Берегнер Д.В.",                        description: "кафетерій «Кав'ярня»",                status: "" },
-    { id_num: 85,  code: "606",  title: "ФОП Белінський П.П.",                      description: "м-н «Наш карavan»",                   status: "" },
-    { id_num: 86,  code: "607",  title: "ФОП Богачов Ю.Ю.",                         description: "м-н «І ранд»",                        status: "Знято" },
-    { id_num: 87,  code: "621",  title: "буд. Яковенко К.П.",                       description: "",                                    status: "смт.Теплик" },
-    { id_num: 88,  code: "622",  title: "буд. Мартинюк В.В.",                       description: "",                                    status: "" },
-    { id_num: 89,  code: "623",  title: "буд. Колодій М.І.",                        description: "",                                    status: "" },
-    { id_num: 90,  code: "624",  title: "буд. Дмитренко О.А.",                     description: "",                                    status: "" },
-    { id_num: 91,  code: "625",  title: "кв. Відомська В.В.",                       description: "",                                    status: "" },
-    { id_num: 92,  code: "626",  title: "кв. Старостенко О.М.",                     description: "",                                    status: "Знято" },
-    { id_num: 93,  code: "627",  title: "кв. Килимник Н.Д.",                        description: "",                                    status: "" },
-    { id_num: 94,  code: "628",  title: "кв. Бортник С.О.",                         description: "",                                    status: "" },
-    { id_num: 95,  code: "629",  title: "кв. Васильченко В.В.",                     description: "",                                    status: "пожарка" },
-    { id_num: 96,  code: "630",  title: "ТОВ «НК Зоря Поділля»",                   description: "",                                    status: "" },
-    { id_num: 97,  code: "631",  title: "ФОП Яковенко З.В.",                        description: "м-н «1 – контр»",                     status: "?" },
-    { id_num: 98,  code: "632",  title: "«Укрпошта»",                               description: "",                                    status: "" },
-    { id_num: 99,  code: "635",  title: "буд. Тимошенко Б.М.",                      description: "",                                    status: "" },
-    { id_num: 100, code: "636",  title: "буд. Салтана Н.М.",                        description: "",                                    status: "" },
-    { id_num: 101, code: "637",  title: "буд. Голуб Т.І.",                          description: "",                                    status: "" },
-    { id_num: 102, code: "638",  title: "буд. Сирота О.Ф.",                         description: "",                                    status: "" },
-    { id_num: 103, code: "639",  title: "ТОВ «Ріва-Сталь»",                         description: "",                                    status: "" },
-    { id_num: 104, code: "640",  title: "«Теплицька РС УДМС у Вінницькій обл.»",   description: "",                                    status: "смт.Теплик / Знято" },
-    { id_num: 105, code: "641",  title: "Теплицькі електромережі",                  description: "",                                    status: "смт.Теплик" },
-    { id_num: 106, code: "676",  title: "ТОВ «НК Рітейл» «Наш край»",              description: "",                                    status: "смт.Теплик / Знято / ФОРА" },
-    { id_num: 107, code: "677",  title: "буд. Волошин П.В.",                        description: "",                                    status: "смт.Теплик" },
-    { id_num: 108, code: "696",  title: "ФОП Круш Б.І.",                            description: "деревообробний цех",                  status: "" },
-    { id_num: 109, code: "761",  title: "буд. Лашенко Г.Ю.",                        description: "",                                    status: "" },
-    { id_num: 110, code: "797",  title: "ТОВ «Корпорація Скіф – 96»",              description: "",                                    status: "" },
-    { id_num: 111, code: "797",  title: "Теплицький районний центр зайнятості",     description: "",                                    status: "смт.Теплик" },
-    { id_num: 112, code: "837",  title: "Гайсинський РС УДМС",                      description: "",                                    status: "пожарка" },
-    { id_num: 113, code: "838",  title: "Теплицький РС УДМС",                       description: "",                                    status: "Знято / смт.Теплик / пожарка" },
-    { id_num: 114, code: "886",  title: "ФОП Максимлюк С.І.",                       description: "м-н «Економ плюс»",                   status: "" },
-    { id_num: 115, code: "887",  title: "буд. Замкового В.І.",                      description: "",                                    status: "" },
-    { id_num: 116, code: "900",  title: "кв. Матвєєва Л.І.",                        description: "",                                    status: "" },
-    { id_num: 117, code: "901",  title: "ДП «Гайсинське лісове господарство»",     description: "",                                    status: "Знято" },
-    { id_num: 118, code: "???",  title: "Територіальний центр соціального обслуговування", description: "",                            status: "" },
-    { id_num: 119, code: "1053", title: "ТОВ «Корпорація Скіф – 96»",              description: "",                                    status: "пожарка" },
-    { id_num: 120, code: "1054", title: "кв. Маленчук Н.О.",                        description: "",                                    status: "" },
-    { id_num: 121, code: "1055", title: "буд. Кушнірук В.О.",                       description: "",                                    status: "Знято" },
-    { id_num: 122, code: "1062", title: "буд. Нечиталюк І.В.",                      description: "",                                    status: "смт.Теплик" },
-    { id_num: 123, code: "1065", title: "буд. Браславського Ю.С.",                  description: "",                                    status: "смт.Теплик" },
-    { id_num: 124, code: "1066", title: "кв. Бойко В.П.",                           description: "",                                    status: "" },
-    { id_num: 125, code: "1067", title: "ФОП Подчос В.Ф.",                          description: "ювелірний бутік «Золото»",             status: "" },
-
-    // ===== Сторінка 10 (рядки 126–178) =====
-    { id_num: 126, code: "1068", title: "ТОВ «Подорожник – Вінниця»",               description: "аптека",                              status: "" },
-    { id_num: 127, code: "1069", title: "ТОВ «НК «Зоря Поділля»",                  description: "",                                    status: "" },
-    { id_num: 128, code: "1070", title: "гараж Управління освіти фізичної культури", description: "",                                   status: "Знято" },
-    { id_num: 129, code: "1074", title: "буд. Колодійчук С.В.",                     description: "",                                    status: "Знято" },
-    { id_num: 130, code: "1075", title: "буд. Косенко Л.П.",                        description: "",                                    status: "" },
-    { id_num: 131, code: "1076", title: "ТОВ «Руш» м-н «Єва -2151»",               description: "",                                    status: "Знято" },
-    { id_num: 132, code: "1077", title: "ПП фірма «Найс»",                          description: "",                                    status: "" },
-    { id_num: 133, code: "1136", title: "ФОП Чайко В.О.",                           description: "приміщення",                          status: "Знято" },
-    { id_num: 134, code: "1175", title: "кв. Лактіонова І.В.",                      description: "",                                    status: "" },
-    { id_num: 135, code: "1176", title: "буд. Дегелье Г.С.",                        description: "",                                    status: "" },
-    { id_num: 136, code: "1177", title: "«Аваль банк»",                             description: "банкомат вул. 1-го Травня, 34",       status: "" },
-    { id_num: 137, code: "1178", title: "«Аваль банк»",                             description: "банкомат вул. 1-го Травня, 30",       status: "" },
-    { id_num: 138, code: "1198", title: "буд. Решетнік В.І.",                       description: "",                                    status: "" },
-    { id_num: 139, code: "1199", title: "буд. Чайки О.Д.",                          description: "",                                    status: "" },
-    { id_num: 140, code: "1200", title: "буд. Решетнік І.В.",                       description: "",                                    status: "" },
-    { id_num: 141, code: "1201", title: "буд. Бойко П.О.",                          description: "",                                    status: "" },
-    { id_num: 142, code: "1202", title: "буд. Витюк В.А.",                          description: "",                                    status: "" },
-    { id_num: 143, code: "1203", title: "буд. Юрчак Т.А.",                          description: "",                                    status: "" },
-    { id_num: 144, code: "1204", title: "буд. Котенко Н.М.",                        description: "",                                    status: "" },
-    { id_num: 145, code: "1205", title: "буд. Мандибури Л.М.",                      description: "",                                    status: "" },
-    { id_num: 146, code: "1206", title: "буд. Огороднік Н.С.",                      description: "",                                    status: "" },
-    { id_num: 147, code: "1207", title: "буд. Шевчук Л.О.",                         description: "",                                    status: "" },
-    { id_num: 148, code: "1208", title: "гараж Подчос А.О.",                        description: "",                                    status: "" },
-    { id_num: 149, code: "1213", title: "буд. Лещенко Т.О.",                        description: "",                                    status: "" },
-    { id_num: 150, code: "1214", title: "буд. Рудницької Н.В.",                     description: "",                                    status: "Знято" },
-    { id_num: 151, code: "1215", title: "буд. Троян Т.М.",                          description: "",                                    status: "" },
-    { id_num: 152, code: "1216", title: "кв. Зеленецької К.І.",                     description: "",                                    status: "" },
-    { id_num: 153, code: "1217", title: "кв. Манченка О.І.",                        description: "",                                    status: "" },
-    { id_num: 154, code: "1218", title: "кв. Шврадрі А.П.",                         description: "",                                    status: "Знято" },
-    { id_num: 155, code: "1219", title: "ПрАТ «КонцерниХлібпром» ВП «Гайсинхліб»", description: "",                                   status: "" },
-    { id_num: 156, code: "1300", title: "буд. Максимчук С.М.",                      description: "",                                    status: "" },
-    { id_num: 157, code: "1301", title: "буд. Сторожук В.І.",                       description: "",                                    status: "" },
-    { id_num: 158, code: "1302", title: "Банк «Аваль»",                             description: "",                                    status: "" },
-    { id_num: 159, code: "1303", title: "ФОП Решетнік Л.В.",                        description: "кафе «Смакота»",                      status: "" },
-    { id_num: 160, code: "1323", title: "кв. Яковенко В.К.",                        description: "",                                    status: "смт.Теплик" },
-    { id_num: 161, code: "1324", title: "буд. Ворушак В.Б.",                        description: "",                                    status: "смт.Теплик" },
-    { id_num: 162, code: "1325", title: "буд. Чорного В.А.",                        description: "",                                    status: "" },
-    { id_num: 163, code: "1326", title: "ПП «Медіа Дністер»",                       description: "",                                    status: "Знято" },
-    { id_num: 164, code: "1327", title: "ФОП Ковальщик О.П.",                       description: "косметичний салон",                   status: "Знято" },
-    { id_num: 165, code: "1328", title: "ТОВ «Преміум Фінанс»",                     description: "кіоск обміну валюти",                 status: "" },
-    { id_num: 166, code: "1337", title: "буд. Гребенюк В.М.",                       description: "",                                    status: "" },
-    { id_num: 167, code: "1338", title: "ТОВ ВД «Нова Інформація»",                 description: "",                                    status: "Знято" },
-    { id_num: 168, code: "1341", title: "буд. Глинчук В.В.",                        description: "",                                    status: "" },
-    { id_num: 169, code: "1342", title: "буд. Кашенко П.М.",                        description: "",                                    status: "Знято" },
-    { id_num: 170, code: "1343", title: "кв. Тимош В.С.",                           description: "",                                    status: "" },
-    { id_num: 171, code: "1344", title: "буд. Тарасюк В.А.",                        description: "",                                    status: "смт.Теплик" },
-    { id_num: 172, code: "1345", title: "«Ощадбанк» відділення 10001/0102",         description: "",                                    status: "" },
-    { id_num: 173, code: "1346", title: "ФОП Максимець Г.О.",                       description: "ювелірний бутік",                     status: "смт.Теплик" },
-    { id_num: 174, code: "1347", title: "ПАТ «Укртелеком»",                         description: "",                                    status: "" },
-    { id_num: 175, code: "1348", title: "ФОП Безпалько С.В.",                       description: "м-н «Шик і Блиск»",                   status: "смт.Теплик" },
-    { id_num: 176, code: "1349", title: "ФОП Голуб Т.І.",                           description: "м-н «Мотолідер 2»",                   status: "смт.Теплик" },
-    { id_num: 177, code: "1350", title: "ПП «Конекс»",                              description: "аптека №99",                          status: "смт.Теплик" },
-    { id_num: 178, code: "1351", title: "ТОВ «Гайсинський молокозавод»",            description: "",                                    status: "" },
-
-    // ===== Сторінка 11 (рядки 179–230) =====
-    { id_num: 179, code: "1352", title: "ПП «Гарантавто»",                          description: "",                                    status: "Знято" },
-    { id_num: 180, code: "1353", title: "СТ «Центральний ринок»",                   description: "офіс",                               status: "смт.Теплик" },
-    { id_num: 181, code: "1398", title: "ТОВ «Голлентрейд Груп»",                  description: "офіс",                               status: "" },
-    { id_num: 182, code: "1399", title: "ФОП Врублевський О.В.",                    description: "ремонт комп'ютер. техніки",            status: "Знято" },
-    { id_num: 183, code: "1415", title: "ТОВ «Скіф – 96»",                          description: "спортивний з-л",                      status: "" },
-    { id_num: 184, code: "1416", title: "ТОВ «Скіф – 96»",                          description: "спортивна база",                      status: "" },
-    { id_num: 185, code: "1417", title: "ТОВ «Агіт – А»",                           description: "нафтова база",                        status: "" },
-    { id_num: 186, code: "1418", title: "Гайсинська район. держ. лікарня ветерин. медицини", description: "",                           status: "" },
-    { id_num: 187, code: "1419", title: "ФОП Ременюк С.М.",                         description: "м-н «Київстар»",                      status: "" },
-    { id_num: 188, code: "1420", title: "ССТ «Буг»",                                description: "торгово-офісне приміщення",           status: "смт.Теплик" },
-    { id_num: 189, code: "1427", title: "ССТ «Буг»",                                description: "пожарка",                             status: "" },
-    { id_num: 190, code: "1428", title: "буд. Ткаченко А.С.",                       description: "",                                    status: "" },
-    { id_num: 191, code: "1429", title: "ПАТ «Вінницягаз»",                         description: "",                                    status: "???" },
-    { id_num: 192, code: "1661", title: "ПрАТ «Зернопродукт МХП»",                  description: "склад",                               status: "" },
-    { id_num: 193, code: "1662", title: "ФОП Сніжко Т.П.",                          description: "ювелірний бутік «Укрзолото»",         status: "" },
-    { id_num: 194, code: "1663", title: "КУ «Територіальний центр соціального обслуговування»", description: "",                        status: "пожарка" },
-    { id_num: 195, code: "1664", title: "ФОП Петрівська Т.В.",                      description: "«Нова пошта»",                        status: "пожарка / смт.Теплик" },
-    { id_num: 196, code: "1665", title: "УДКУ у Теплицькому р-ні",                  description: "",                                    status: "пожарка / Знято" },
-    { id_num: 197, code: "1666", title: "ТОВ «Компанія Трейд Ойл»",                description: "",                                    status: "" },
-    { id_num: 198, code: "1667", title: "ФОП Ковальчук Л.Ю.",                       description: "офіс",                               status: "" },
-    { id_num: 199, code: "1668", title: "буд. Черепахи В.Г.",                       description: "",                                    status: "" },
-    { id_num: 200, code: "1669", title: "буд. Хитрук І.М.",                         description: "",                                    status: "" },
-    { id_num: 201, code: "1670", title: "кв. Солодко О.П.",                         description: "",                                    status: "" },
-    { id_num: 202, code: "1671", title: "кв. Кучерук В.М.",                         description: "",                                    status: "" },
-    { id_num: 203, code: "1672", title: "гараж Мазепи С.В.",                        description: "пожарка",                             status: "" },
-    { id_num: 204, code: "1673", title: "ФОП Лук'ян М.Ф.",                          description: "«Майстер»",                           status: "" },
-    { id_num: 205, code: "1674", title: "ЦНАП та державної реєстрації",             description: "",                                    status: "смт.Теплик" },
-    { id_num: 206, code: "1675", title: "буд. Марчук І.В.",                         description: "",                                    status: "" },
-    { id_num: 207, code: "1676", title: "буд. Черниш Н.В.",                         description: "",                                    status: "Знято" },
-    { id_num: 208, code: "1677", title: "буд. Гончар Н.М.",                         description: "",                                    status: "" },
-    { id_num: 209, code: "1678", title: "буд. Бурмега В.В.",                        description: "",                                    status: "Знято" },
-    { id_num: 210, code: "1679", title: "буд. Балан А.В.",                          description: "",                                    status: "Знято" },
-    { id_num: 211, code: "1680", title: "буд. Пташки О.В.",                         description: "",                                    status: "" },
-    { id_num: 212, code: "1681", title: "буд. Бордовська Н.П.",                     description: "",                                    status: "" },
-    { id_num: 213, code: "1683", title: "буд. Грабчак І.В.",                        description: "",                                    status: "" },
-    { id_num: 214, code: "1684", title: "кв. Дейнекової Н.Д.",                      description: "",                                    status: "" },
-    { id_num: 215, code: "1685", title: "Гайсинська ОДПІ ГУДФС",                    description: "",                                    status: "" },
-    { id_num: 216, code: "1751", title: "ФОП Трохимчук А.В.",                       description: "м-н «Покрівля і фасад»",              status: "" },
-    { id_num: 217, code: "1752", title: "ФОП Герасименко Р.А.",                     description: "м-н «Дерево Буд»",                    status: "" },
-    { id_num: 218, code: "1753", title: "ФОП Нечипорук В.М.",                       description: "м-н «Техно Топ»",                     status: "" },
-    { id_num: 219, code: "1754", title: "ФОП Поліщук Ю.П.",                         description: "салон краси",                         status: "Знято" },
-    { id_num: 220, code: "1755", title: "ФОП Конотопенко В.А.",                     description: "кафе «Дует»",                         status: "" },
-    { id_num: 221, code: "1756", title: "ПрАТ «Гайсинське СТП «Агромаш»",          description: "",                                    status: "" },
-    { id_num: 222, code: "1757", title: "Красноплільська сільська рада",             description: "",                                    status: "" },
-    { id_num: 223, code: "1772", title: "ФОП Бондар І.І.",                          description: "приміщення тех.огляду",               status: "" },
-    { id_num: 224, code: "1773", title: "ФОП Бордзіхівський О.С.",                  description: "м-н «Новий маркет»",                  status: "Знято" },
-    { id_num: 225, code: "1774", title: "ФОП Берзнер Д.В.",                         description: "кафетерій",                           status: "" },
-    { id_num: 226, code: "1869", title: "ФОП Кугот П.А.",                           description: "ветеринарна аптека",                  status: "" },
-    { id_num: 227, code: "1870", title: "ФОП Пучковська Т.С.",                      description: "м-н «Мрія»",                          status: "Знято" },
-    { id_num: 228, code: "1871", title: "СО «Гайсинські ЕМ»",                       description: "",                                    status: "" },
-    { id_num: 229, code: "1872", title: "КП «Гайсин водоканал» Бєлендіївський водозабор", description: "",                             status: "" },
-    { id_num: 230, code: "1873", title: "КП «Гайсин водоканал» Кучурівський водозабор", description: "",                              status: "" },
-
-    // ===== Сторінка 12 (рядки 231–281) =====
-    { id_num: 231, code: "1909", title: "буд. Березнер І.Г.", description: "", status: "" },
-    { id_num: 232, code: "1910", title: "Краснопільська сільська рада", description: "", status: "" },
-    { id_num: 233, code: "1937", title: "ФОП Лозоренко В.А.", description: "м-н «АКБ +»", status: "" },
-    { id_num: 234, code: "1938", title: "ФОП Гетьман В.Г.", description: "торгівельний центр", status: "пожарка" },
-    { id_num: 235, code: "1939", title: "Гайсинськ. РУП ГУНП у Вінницькій обл.", description: "кабінет РСО №27в", status: "Знято" },
-    { id_num: 236, code: "1940", title: "Гайсинське МРВ СБУ", description: "приміщення", status: "" },
-    { id_num: 237, code: "1941", title: "ТОВ «Магнум Енерджі»", description: "приміщення АГЗС", status: "" },
-    { id_num: 238, code: "1942", title: "ФОП Балан А.В.", description: "кафе «Бахус»", status: "" },
-    { id_num: 239, code: "1967", title: "ТОВ «Поділлянафтотрейд»", description: "АЗС", status: "" },
-    { id_num: 240, code: "1968", title: "ФОП Кобелянський А.М.", description: "«Рибальство»", status: "" },
-    { id_num: 241, code: "1969", title: "ФОП Козачук Т.М.", description: "м-н «Центр взуття та одягу»", status: "" },
-    { id_num: 242, code: "1970", title: "Ощадбанк термінал", description: "", status: "" },
-    { id_num: 243, code: "1971", title: "кв. Івахи М.В.", description: "", status: "" },
-    { id_num: 244, code: "1972", title: "буд. Козловський Б.О.", description: "", status: "пожарка" },
-    { id_num: 245, code: "1973", title: "Архів Гайсинської районної держадмін. РДА", description: "", status: "" },
-    { id_num: 246, code: "2011", title: "ФГ «Вікторія – Терра»", description: "приміщення", status: "" },
-    { id_num: 247, code: "2012", title: "ФОП Герсак Р.М.", description: "м-н «Домашнє свіже м'ясо»", status: "" },
-    { id_num: 248, code: "2013", title: "ФОП Голуб М.М.", description: "торгівельний майданчик", status: "" },
-    { id_num: 249, code: "2014", title: "ТОВ «Наш Kаравaн»", description: "м-н", status: "" },
-    { id_num: 250, code: "2015", title: "ТОВ «Новобуд – 2016»", description: "", status: "" },
-    { id_num: 251, code: "2016", title: "ФОП Кирдан Т.І.", description: "м-н «Продуктоний»", status: "" },
-    { id_num: 252, code: "2039", title: "ФОП Смiян О.О.", description: "м-н «Техніка»", status: "" },
-    { id_num: 253, code: "2040", title: "ФОП Посдинчук В.А.", description: "аптечний пункт", status: "" },
-    { id_num: 254, code: "2041", title: "ТОВ «ПК Зоря Поділля»", description: "", status: "" },
-    { id_num: 255, code: "2065", title: "ФОП Балан А.В.", description: "м-н", status: "" },
-    { id_num: 256, code: "2066", title: "ФОП Козаченко М.В.", description: "кабінет УЗД", status: "" },
-    { id_num: 257, code: "2067", title: "ФОП Кобелянський А.М.", description: "м-н «Catfish»", status: "???" },
-    { id_num: 258, code: "2068", title: "ФОП Кобелянський А.М.", description: "м-н «Риба»", status: "???" },
-    { id_num: 259, code: "2069", title: "ФОП Малімон Ю.В.", description: "м-н «Територія якісних шин»", status: "Знято" },
-    { id_num: 260, code: "2070", title: "ФОП Стасюк І.В.", description: "м-н «Калина»", status: "" },
-    { id_num: 261, code: "2071", title: "КУ «Інклюзивно-ресурсний центр»", description: "приміщення", status: "" },
-    { id_num: 262, code: "2072", title: "ПП «НАІС»", description: "аптека «Здорова родина»", status: "" },
-    { id_num: 263, code: "2073", title: "буд. Гук А.І.", description: "", status: "" },
-    { id_num: 264, code: "2100", title: "буд. Коновальчук М.Т.", description: "", status: "" },
-    { id_num: 265, code: "2101", title: "кв. Коновальчук Г.М.", description: "", status: "" },
-    { id_num: 266, code: "2102", title: "буд. Кравченко М.О.", description: "", status: "" },
-    { id_num: 267, code: "2103", title: "буд. Дмитренко В.О.", description: "", status: "" },
-    { id_num: 268, code: "2104", title: "буд. Кирилюк В.В.", description: "", status: "" },
-    { id_num: 269, code: "2105", title: "буд. Возняк І.І.", description: "", status: "" },
-    { id_num: 270, code: "2106", title: "ФОП Подчос В.Ф.", description: "відділи торгівельних центрів: «Зелений світ», «Крамниця творчості»", status: "" },
-    { id_num: 271, code: "2107", title: "Служба у справах дітей Гайсинської міської ради", description: "", status: "" },
-    { id_num: 272, code: "2116", title: "кв. Стешок С.М.", description: "", status: "" },
-    { id_num: 273, code: "2117", title: "буд. Гаврилишина О.М.", description: "", status: "" },
-    { id_num: 274, code: "2118", title: "буд. Чекалюк М.П.", description: "", status: "" },
-    { id_num: 275, code: "2119", title: "буд. Перкун В.А.", description: "", status: "" },
-    { id_num: 276, code: "2120", title: "ПП «Агропостач»", description: "", status: "" },
-    { id_num: 277, code: "2121", title: "ФОП Кучеров В.А.", description: "кафе «Гостинний»", status: "Знято" },
-    { id_num: 278, code: "2122", title: "ФОП Мурзін С.В.", description: "м-н «Червоний маркет»", status: "" },
-    { id_num: 279, code: "2123", title: "Гайсинський пенсійний фонд", description: "", status: "" },
-    { id_num: 280, code: "2124", title: "ФОП Кугот П.А.", description: "ветеринарна аптека", status: "пожарка" },
-    { id_num: 281, code: "2125", title: "Відділ освіти Гайсинської міської ради, гімназія №1", description: "", status: "" },
-
-    // ===== Сторінка 13 (рядки 282–334) =====
-    { id_num: 282, code: "2126", title: "ТОВ Теплицький відголівельний комплекс", description: "", status: "" },
-    { id_num: 283, code: "2127", title: "ФГ «Крокус»", description: "офіс", status: "" },
-    { id_num: 284, code: "2128", title: "ПП «НАІС»", description: "аптека «Здорова родина»", status: "смт.Теплик" },
-    { id_num: 285, code: "2129", title: "ФОП Марчук І.В.", description: "м-н «Шпалери»", status: "смт.Теплик" },
-    { id_num: 286, code: "2130", title: "МПП «Фірма Гарант»", description: "офіс", status: "смт.Теплик" },
-    { id_num: 287, code: "2131", title: "ФОП Дубенкова Л.В.", description: "піцерія", status: "смт.Теплик" },
-    { id_num: 288, code: "2138", title: "ФОП Кузіла С.С.", description: "м-н «Ярмарок»", status: "" },
-    { id_num: 289, code: "2139", title: "ТОВ «Есо-Автотехнікс»", description: "м-н «Автозапчастини»", status: "" },
-    { id_num: 290, code: "2140", title: "ТОВ «Гайлем – Ч»", description: "СТС", status: "" },
-    { id_num: 291, code: "2141", title: "буд. Голомовзий А.О.", description: "", status: "" },
-    { id_num: 292, code: "2142", title: "кв. Котенко Т.С.", description: "", status: "" },
-    { id_num: 293, code: "2156", title: "кв. Должкевич Л.В.", description: "", status: "" },
-    { id_num: 294, code: "2157", title: "кв. Некрут В.Ю.", description: "", status: "" },
-    { id_num: 295, code: "2158", title: "буд. Мельникова В.В.", description: "", status: "" },
-    { id_num: 296, code: "2159", title: "буд. Чорномаз В.М.", description: "", status: "" },
-    { id_num: 297, code: "2160", title: "буд. Куліцький М.М.", description: "", status: "" },
-    { id_num: 298, code: "2161", title: "ФОП Лещенко О.Л.", description: "агромаркет «Нива»", status: "пожарка" },
-    { id_num: 299, code: "2162", title: "ФОП Петрівська Т.В.", description: "«Нова пошта»", status: "" },
-    { id_num: 300, code: "2163", title: "ФОП Дубковська М.В.", description: "міні-маркет «Бджілка»", status: "" },
-    { id_num: 301, code: "2164", title: "ФОП Нетребко І.А.", description: "ювелірний бутік «Укрзолото»", status: "Знято" },
-    { id_num: 302, code: "2174", title: "ТОВ «Вінницягаз збут»", description: "", status: "" },
-    { id_num: 303, code: "2175", title: "ПП «Вінтехпостач»", description: "офіс, склад", status: "Знято КЦС" },
-    { id_num: 304, code: "2234", title: "ТОВ «Новобуд – 2016»", description: "приміщення консьєржа", status: "" },
-    { id_num: 305, code: "2235", title: "ТОВ «Теплицький насіннєвий завод»", description: "", status: "Знято" },
-    { id_num: 306, code: "2236", title: "ТОВ «Альянс Рітейл Груп»", description: "м-н «Домашній маркет»", status: "" },
-    { id_num: 307, code: "2237", title: "Гайсинська окружна прокуратура", description: "", status: "" },
-    { id_num: 308, code: "2238", title: "ФОП Петрівська Т.В.", description: "відділення «Нова пошта»", status: "" },
-    { id_num: 309, code: "2239", title: "ФОП Бура І.С.", description: "м-н «Комп'ютерний всесвіт»", status: "" },
-    { id_num: 310, code: "2240", title: "буд. Щуровської В.Л.", description: "", status: "" },
-    { id_num: 311, code: "2241", title: "буд. Пламаділа С.В.", description: "", status: "" },
-    { id_num: 312, code: "2242", title: "буд. Казандаєва Н.Г.", description: "", status: "" },
-    { id_num: 313, code: "2243", title: "буд. Медзяк Т.В.", description: "", status: "" },
-    { id_num: 314, code: "2269", title: "ФОП Гуліка Н.С.", description: "склад", status: "" },
-    { id_num: 315, code: "2270", title: "ФОП Гуліка Н.С.", description: "«Крамниця солодощів»", status: "" },
-    { id_num: 316, code: "2271", title: "ФОП Зеленський В.С.", description: "", status: "" },
-    { id_num: 317, code: "2272", title: "ТОВ «Люкс 24»", description: "АЗС, обмін валют", status: "" },
-    { id_num: 318, code: "2273", title: "ТОВ «Преміум Фінанс»", description: "", status: "" },
-    { id_num: 319, code: "2274", title: "АТ «Ощадбанк» відділення", description: "", status: "" },
-    { id_num: 320, code: "2275", title: "АТ «Ощадбанк» термінал", description: "", status: "" },
-    { id_num: 321, code: "2301", title: "буд. Семененко А.В.", description: "", status: "" },
-    { id_num: 322, code: "2302", title: "буд. Бровко Д.В.", description: "кіоск тютюнових виробів", status: "Знято" },
-    { id_num: 323, code: "2303", title: "ФОП Волкова А.В.", description: "кіоск тютюнових виробів", status: "Знято" },
-    { id_num: 324, code: "2304", title: "ФОП Волкова А.В.", description: "аптека", status: "" },
-    { id_num: 325, code: "2305", title: "ТОВ «НАІС»", description: "м-н", status: "" },
-    { id_num: 326, code: "2306", title: "ТОВ «Наш Kаравaн»", description: "", status: "" },
-    { id_num: 327, code: "2351", title: "Школа ЗСО І-ІІІ ст. №1", description: "", status: "" },
-    { id_num: 328, code: "2352", title: "Школа ЗСО І-ІІІ ст. №2", description: "", status: "" },
-    { id_num: 329, code: "2353", title: "ФОП Музика С.О.", description: "м-н «Козацькі напівфабрикати»", status: "" },
-    { id_num: 330, code: "2361", title: "Школа ЗСО І-ІІІ ст. №3", description: "", status: "" },
-    { id_num: 331, code: "2362", title: "Школа №4", description: "", status: "" },
-    { id_num: 332, code: "2363", title: "Школа №5", description: "", status: "" },
-    { id_num: 333, code: "2364", title: "Школа №6", description: "", status: "" },
-    { id_num: 334, code: "2365", title: "Школа ЗСО І-ІІІ ст. с.Куна", description: "", status: "" },
-
-    // ===== Сторінка 14 (рядки 335–387) =====
-    { id_num: 335, code: "2366", title: "Школа ЗСО І-ІІІ ст. с.Харпачка", description: "", status: "" },
-    { id_num: 336, code: "2367", title: "Школа ЗСО І-ІІІ ст. с.Чечелівка", description: "", status: "" },
-    { id_num: 337, code: "2368", title: "Школа ЗСО І-ІІІ ст. с.Яроматниці", description: "", status: "" },
-    { id_num: 338, code: "2391", title: "Школа ЗСО І-ІІІ ст. с.Танциори", description: "", status: "" },
-    { id_num: 339, code: "2392", title: "Школа ЗСО І-ІІІ ст. с.Гуниця", description: "", status: "" },
-    { id_num: 340, code: "2393", title: "Школа ЗСО І-ІІІ ст. с.Бандурі", description: "", status: "" },
-    { id_num: 341, code: "2394", title: "Школа ЗСО І-ІІІ ст. с.Клбзич", description: "", status: "" },
-    { id_num: 342, code: "2421", title: "АТ «Райффайзен банк»", description: "банкомат", status: "" },
-    { id_num: 343, code: "2422", title: "ТОВ «Наш Кaравaн»", description: "м-н", status: "" },
-    { id_num: 344, code: "2423", title: "ТОВ «АВ Метал груп»", description: "м-н+склад", status: "" },
-    { id_num: 345, code: "2424", title: "ТОВ «Нафтоіртола» ЗМП", description: "АВ", status: "" },
-    { id_num: 346, code: "2425", title: "ТОВ «Дицко» М.", description: "м-н", status: "" },
-    { id_num: 347, code: "2426", title: "ФОП Койнес І.В.", description: "кіоск тютюнових виробів №1", status: "Знято" },
-    { id_num: 348, code: "2427", title: "ФОП Койнес І.В.", description: "кіоск тютюнових виробів №4", status: "Знято" },
-    { id_num: 349, code: "2428", title: "кв. Велохи В.В.", description: "", status: "" },
-    { id_num: 350, code: "2429", title: "кв. Цвіцун В.Ю.", description: "", status: "Знято" },
-    { id_num: 351, code: "2430", title: "буд. Шапова І.Н.", description: "", status: "" },
-    { id_num: 352, code: "2431", title: "буд. Савельєва М.І.", description: "", status: "" },
-    { id_num: 353, code: "2432", title: "ФОП Войтко Н.М.", description: "м-н одягу", status: "Знято" },
-    { id_num: 354, code: "2433", title: "ФОП Плахотнюк Т.В.", description: "м-н продуктів", status: "" },
-    { id_num: 355, code: "2560", title: "ФОП Масленкова І.В.", description: "кафе «Експрес»", status: "Знято" },
-    { id_num: 356, code: "2561", title: "ТОВ «Вигідна покупка»", description: "м-н «Аврора»", status: "" },
-    { id_num: 357, code: "2562", title: "буд. Бернацький В.Ю.", description: "", status: "" },
-    { id_num: 358, code: "2563", title: "буд. Семенок В.М.", description: "", status: "" },
-    { id_num: 359, code: "2598", title: "ФОП Земляникова Н.І.", description: "м-н «День рибака»", status: "" },
-    { id_num: 360, code: "2599", title: "ФОП Черепаха О.Д.", description: "м-н техніки", status: "" },
-    { id_num: 361, code: "2600", title: "Виконавчий округ Вінницької області Цепна", description: "", status: "" },
-    { id_num: 362, code: "2601", title: "ТОВ «ПК Зоря Поділля»", description: "склад", status: "" },
-    { id_num: 363, code: "2602", title: "ТОВ «Авто Стандарт України»", description: "офіс/склад", status: "" },
-    { id_num: 364, code: "2603", title: "ПрАТ «Зернопродукт МХП»", description: "зерносклад", status: "" },
-    { id_num: 365, code: "2604", title: "Краснопільська сільська рада", description: "приміщення Тракійський старостат", status: "" },
-    { id_num: 366, code: "2605", title: "ОЗ «Теплицька шк І-ІІІ СТ. №1»", description: "приміщення", status: "" },
-    { id_num: 367, code: "2622", title: "ФОП Мусієнко С.А.", description: "кафе «Рандеву»", status: "" },
-    { id_num: 368, code: "2623", title: "ФОП Гулявенко В.В.", description: "м-н «ГАІ»", status: "" },
-    { id_num: 369, code: "2624", title: "ФОП Васюк С.М.", description: "м-н «Будона»", status: "" },
-    { id_num: 370, code: "2625", title: "ФОП Ременюк С.М.", description: "м-н «Київстар»", status: "" },
-    { id_num: 371, code: "2626", title: "ФОП Корнієнко А.Д.", description: "м-н «Військторг»", status: "" },
-    { id_num: 372, code: "2627", title: "СТОВ «Ренет» КПП", description: "склади", status: "" },
-    { id_num: 373, code: "2628", title: "СТОВ «Ренет» КПП", description: "склади", status: "" },
-    { id_num: 374, code: "2629", title: "ТОВ «Подорожник Вінниця»", description: "аптека «Подорожник»", status: "" },
-    { id_num: 375, code: "2630", title: "Прокуратура Вінницька область", description: "", status: "" },
-    { id_num: 376, code: "2631", title: "ПН «Ломбард» №1 – ТОВ «Контракт-Груп компанія»", description: "", status: "" },
-    { id_num: 377, code: "2632", title: "ТОВ «Ренд Сталь»", description: "СТС", status: "" },
-    { id_num: 378, code: "2633", title: "ФОП Мусієнко П.В.", description: "м-н бар «Круїз»", status: "" },
-    { id_num: 379, code: "2634", title: "ТОВ «ПК Зоря Поділля»", description: "склад", status: "" },
-    { id_num: 380, code: "2686", title: "ФОП Ніколаєнко В.В.", description: "м-н «Білецька»", status: "" },
-    { id_num: 381, code: "2687", title: "буд. Демирчик Л.В.", description: "", status: "" },
-    { id_num: 382, code: "2715", title: "буд. Гордієнко А.А.", description: "", status: "" },
-    { id_num: 383, code: "2716", title: "буд. Совіцьке Т.Й.", description: "", status: "" },
-    { id_num: 384, code: "2717", title: "ФОП Гніщенко Г.О.", description: "м-н «Непродивається»", status: "" },
-    { id_num: 385, code: "2718", title: "ФОП Гуліка Н.С.", description: "м-н «Крамниця солодощів»", status: "" },
-    { id_num: 386, code: "2719", title: "ФОП Гуліка Н.С.", description: "м-н «Спорт стиль»", status: "" },
-
-    // ===== Сторінка 15 (рядки 388–426) =====
-    { id_num: 388, code: "2720", title: "ФОП Розумович О.О.", description: "косметичний кабінет «Венера»", status: "" },
-    { id_num: 389, code: "2721", title: "ФОП Кирилюк Ю.В.", description: "салон краси", status: "" },
-    { id_num: 390, code: "2722", title: "ФОП Борис С.К.", description: "м-н «Орхідея»", status: "" },
-    { id_num: 391, code: "2723", title: "АТ «Укрпошта»", description: "кімната зберігання зброї", status: "" },
-    { id_num: 392, code: "2724", title: "ТОВ «І Гранлекс Грейд»", description: "м-н", status: "" },
-    { id_num: 393, code: "2725", title: "ЗДО «Сонечко»", description: "м-н", status: "" },
-    { id_num: 394, code: "2726", title: "ЗДО «Веселка»", description: "", status: "" },
-    { id_num: 395, code: "2727", title: "ЗДО «Дзвіночок»", description: "", status: "" },
-    { id_num: 396, code: "2728", title: "ЗДО «Веснянка»", description: "", status: "" },
-    { id_num: 397, code: "2729", title: "Школа І-ІІІ ст. с.Кисляк", description: "", status: "" },
-    { id_num: 398, code: "2730", title: "Школа І-ІІІ ст. с.Губник", description: "", status: "" },
-    { id_num: 399, code: "2731", title: "ЗДО №4 «Зірочка»", description: "", status: "" },
-    { id_num: 400, code: "2732", title: "ЗДО №5 «Факел»", description: "", status: "" },
-    { id_num: 401, code: "2733", title: "ЗДО №7 «Берізка»", description: "", status: "" },
-    { id_num: 402, code: "2734", title: "Школа І-ІІІ ст. с.Степашки", description: "", status: "" },
-    { id_num: 403, code: "2735", title: "Школа І-ІІІ ст. с.Жерденівка", description: "", status: "" },
-    { id_num: 404, code: "2736", title: "Школа І-ІІІ ст. с.Карбівка", description: "", status: "" },
-    { id_num: 405, code: "2737", title: "Школа І-ІІІ ст. с.Бубнівка", description: "", status: "" },
-    { id_num: 406, code: "2738", title: "ФОП Бабій І.С.", description: "м-н Gabis «Центр взуття та одягу»", status: "" },
-    { id_num: 407, code: "2739", title: "ФОП Гуліка Н.С.", description: "м-н «Крамниця солодощів»", status: "" },
-    { id_num: 408, code: "2740", title: "КП «Гайсинводоканал»", description: "насосна", status: "" },
-    { id_num: 409, code: "2741", title: "КП «Гайсинводоканал»", description: "насосна", status: "" },
-    { id_num: 410, code: "2742", title: "КП «Гайсинводоканал»", description: "насосна", status: "" },
-    { id_num: 411, code: "2743", title: "КП «Гайсинводоканал»", description: "насосна", status: "" },
-    { id_num: 412, code: "2744", title: "КП «Гайсинводоканал»", description: "насосна", status: "" },
-    { id_num: 413, code: "2745", title: "КП «Гайсинводоканал»", description: "насосна", status: "" },
-    { id_num: 414, code: "2746", title: "КП «Гайсинводоканал»", description: "свердловина Б-2", status: "" },
-    { id_num: 415, code: "2747", title: "КП «Гайсинводоканал»", description: "свердловина Б-3", status: "" },
-    { id_num: 416, code: "2748", title: "КП «Гайсинводоканал»", description: "свердловина Б-4", status: "" },
-    { id_num: 417, code: "2749", title: "КП «Гайсинводоканал»", description: "свердловина Б-8", status: "" },
-    { id_num: 418, code: "2757", title: "КП «Гайсинводоканал»", description: "свердловина К-1", status: "" },
-    { id_num: 419, code: "2758", title: "КП «Гайсинводоканал»", description: "свердловина К-6", status: "" },
-    { id_num: 420, code: "2759", title: "КП «Гайсинводоканал»", description: "свердловина К-7", status: "" },
-    { id_num: 421, code: "2760", title: "КП «Гайсинводоканал»", description: "свердловина К-8", status: "" },
-    { id_num: 422, code: "2761", title: "КП «Гайсинводоканал»", description: "свердловина К-10", status: "" },
-    { id_num: 423, code: "2762", title: "КП «Гайсинводоканал»", description: "насосна", status: "" },
-    { id_num: 424, code: "2763", title: "КП «Гайсинводоканал»", description: "насосна", status: "" },
-    { id_num: 425, code: "2764", title: "КП «Гайсинводоканал»", description: "насосна", status: "" },
-    { id_num: 426, code: "2765", title: "КП «Гайсинводоканал»", description: "насосна", status: "" },
-
-    // ===== УПО (сторінка 7) =====
-    { id_num: 427, code: "УПО-1",  title: "«Ломбард Експрес готівка»", description: "", status: "УПО" },
-    { id_num: 428, code: "УПО-2",  title: "кв. Вербовенко О.В.", description: "", status: "УПО" },
-    { id_num: 429, code: "УПО-3",  title: "буд. Казакова В.С.", description: "", status: "УПО" },
-    { id_num: 430, code: "УПО-20", title: "ФОП Подчас В.Ф.", description: "«Золото сувеніри»", status: "УПО" },
-    { id_num: 431, code: "УПО-21", title: "ФОП Михайлюк Д.А.", description: "«Пан піца»", status: "УПО" },
-    { id_num: 432, code: "УПО-22", title: "ТОВ «Цехаве Корм ЛТД»", description: "", status: "УПО" },
-    { id_num: 433, code: "УПО-23", title: "кв. Черніченко Н.І.", description: "", status: "УПО" },
-    { id_num: 434, code: "УПО-24", title: "кв. Гребенюк С.М.", description: "", status: "УПО" },
-    { id_num: 435, code: "УПО-25", title: "буд. Яковенко С.В.", description: "", status: "УПО" },
-    { id_num: 436, code: "УПО-40", title: "кв. Гетьман Я.В.", description: "", status: "УПО" },
-    { id_num: 437, code: "УПО-41", title: "ФГ Власюк О.Д.", description: "", status: "УПО" },
-    { id_num: 438, code: "УПО-42", title: "ТОВ «Ясен-Поділля»", description: "", status: "УПО" },
-    { id_num: 439, code: "УПО-73", title: "ФОП Кабаровський В.О.", description: "м-н «Будівельник»", status: "УПО" },
-    { id_num: 440, code: "УПО-74", title: "ФГ «Чиста криниця»", description: "", status: "УПО" },
-    { id_num: 441, code: "УПО-75", title: "СПД Ковальчук С.М.", description: "«Кисляцька криниця»", status: "УПО" },
-    { id_num: 442, code: "УПО-76", title: "«Ощадбанк»", description: "", status: "УПО" },
-    { id_num: 443, code: "УПО-77", title: "«Ощадбанк» банкомат", description: "", status: "УПО" },
-    { id_num: 444, code: "УПО-78", title: "«Ощадбанк»", description: "", status: "УПО" },
-    { id_num: 445, code: "УПО-79", title: "Гайсинське лісове господарство", description: "", status: "УПО" },
-    { id_num: 446, code: "УПО-123", title: "ТОВ «НК Зоря Поділля»", description: "", status: "УПО" },
+  const gaisyn = [
+    { num:1,   code:"15",   title:"ПП Сторожук",                              desc:"м-н «Продукти»",                     note:"" },
+    { num:2,   code:"16",   title:"ПП Молодова",                              desc:"м-н «Олімп»",                        note:"" },
+    { num:3,   code:"19",   title:"ПП Гетьман В.Г.",                          desc:"м-н № 2",                            note:"" },
+    { num:4,   code:"172",  title:"ПП Мукоїд",                                desc:"м-н",                                note:"" },
+    { num:5,   code:"177",  title:"ПП Лещенко В.В.",                          desc:"м-н «Електролюкс»",                  note:"" },
+    { num:6,   code:"180",  title:"ТОВ Господарник універмаг «Гайсин»",       desc:"",                                   note:"" },
+    { num:7,   code:"181",  title:"ПП Грималовський М.В.",                    desc:"",                                   note:"" },
+    { num:8,   code:"183",  title:"АППБ «Аваль банк»",                        desc:"",                                   note:"" },
+    { num:9,   code:"185",  title:"Бюро технічної документ. МБП",             desc:"",                                   note:"" },
+    { num:10,  code:"186",  title:"«Ощадбанк»",                               desc:"",                                   note:"" },
+    { num:11,  code:"232",  title:"ПП Личманюк ларьок",                       desc:"",                                   note:"" },
+    { num:12,  code:"234",  title:"ПП Карпенко",                              desc:"м-н «Роксолана»",                    note:"" },
+    { num:13,  code:"235",  title:"ТОВ «Ленд»",                               desc:"м-н «Сучасне домашнє господарство»", note:"Знято" },
+    { num:14,  code:"???",  title:"Рай вул зол зв'язку каса",                 desc:"",                                   note:"Знято" },
+    { num:15,  code:"238",  title:"СТ «Шанс»",                                desc:"кафе «Шашлична»",                    note:"" },
+    { num:16,  code:"242",  title:"Міжлікарняна",                             desc:"аптека",                             note:"" },
+    { num:17,  code:"243",  title:"ПП Посдничук В.М.",                        desc:"аптека",                             note:"" },
+    { num:18,  code:"246",  title:"Нотаріальна контора",                      desc:"",                                   note:"Знято" },
+    { num:19,  code:"249",  title:"ПП Гетьман П.Є.",                          desc:"м-н № 1",                            note:"" },
+    { num:20,  code:"251",  title:"СТ «Протектор +»",                         desc:"м-н «Ветеран»",                      note:"" },
+    { num:21,  code:"252",  title:"СТ «Троянда»",                             desc:"м-н",                                note:"Знято" },
+    { num:22,  code:"253",  title:"ФОП Козловський О.Л.",                     desc:"м-н «Автозапчастини»",               note:"" },
+    { num:23,  code:"255",  title:"ПП Кирпічник",                             desc:"склад",                              note:"" },
+    { num:24,  code:"256",  title:"ПП Тимошенко",                             desc:"м-н",                                note:"Знято" },
+    { num:25,  code:"257",  title:"ПП Молодова СТ «Супутник»",                desc:"м-н № 12",                           note:"" },
+    { num:26,  code:"259",  title:"кв. Гончарук В.Л.",                        desc:"",                                   note:"" },
+    { num:27,  code:"260",  title:"кв. Козловської О.І.",                     desc:"",                                   note:"" },
+    { num:28,  code:"261",  title:"ПП Молодова СТ «Супутник»",                desc:"м-н № 25",                           note:"" },
+    { num:29,  code:"335",  title:"ПП Гудеренко В.В.",                        desc:"",                                   note:"" },
+    { num:30,  code:"337",  title:"СПД Стецюк склад",                         desc:"",                                   note:"" },
+    { num:31,  code:"341",  title:"ФОП Бойко П.О.",                           desc:"м-н «Продовольчі товари»",           note:"" },
+    { num:32,  code:"344",  title:"ПП Кірпічнік П.Й.",                        desc:"м-н «Міраж»",                        note:"" },
+    { num:33,  code:"346",  title:"«Укрпошта»",                               desc:"склад",                              note:"" },
+    { num:34,  code:"347",  title:"«Укрпошта»",                               desc:"",                                   note:"" },
+    { num:35,  code:"348",  title:"ПП Будяк П.В.",                            desc:"",                                   note:"" },
+    { num:36,  code:"351",  title:"ПП Нетудихата",                            desc:"склад",                              note:"" },
+    { num:37,  code:"354",  title:"ПП Войтко",                                desc:"м-н «Валентина»",                    note:"" },
+    { num:38,  code:"357",  title:"ПП Молодова",                              desc:"м-н «Олімп»",                        note:"" },
+    { num:39,  code:"358",  title:"«Укрпошта»",                               desc:"кімн.зберігання зброї",              note:"" },
+    { num:40,  code:"359",  title:"УПФУ м. Гайсин",                           desc:"",                                   note:"" },
+    { num:41,  code:"362",  title:"СПД Мельникова",                           desc:"м-н",                                note:"" },
+    { num:42,  code:"363",  title:"Краєзнавчий музей",                        desc:"",                                   note:"" },
+    { num:43,  code:"364",  title:"ФОП Вербовенко О.В.",                      desc:"",                                   note:"" },
+    { num:44,  code:"365",  title:"ПП Чекалюк СТ «Галиця»",                  desc:"м-н № 17",                           note:"" },
+    { num:45,  code:"268",  title:"ПП Фідорчук О.О.",                         desc:"кафе «Урожай»",                      note:"" },
+    { num:46,  code:"369",  title:"«Вінницяоблтеплоенерго»",                  desc:"",                                   note:"" },
+    { num:47,  code:"371",  title:"ПП Антощук",                               desc:"м-н «Дитячий світ»",                 note:"" },
+    { num:48,  code:"373",  title:"ФОП Манжос П.С.",                          desc:"м-н «Продукти»",                     note:"" },
+    { num:49,  code:"375",  title:"ПП «Адаменко»",                            desc:"ларьок",                             note:"" },
+    { num:50,  code:"377",  title:"Райдерж. адміністрація архів",             desc:"",                                   note:"" },
+    { num:51,  code:"379",  title:"СТ Пролісок",                              desc:"м-н № 20",                           note:"" },
+    { num:52,  code:"383",  title:"КМП «Золотий»",                            desc:"",                                   note:"" },
+    { num:53,  code:"384",  title:"«Фарм»",                                   desc:"аптека № 21",                        note:"" },
+    { num:54,  code:"387",  title:"кв. Сирота І.З.",                          desc:"",                                   note:"" },
+    { num:55,  code:"393",  title:"кв. Вітохи О.І.",                          desc:"",                                   note:"" },
+    { num:56,  code:"400",  title:"кв. Галконій О.І.",                        desc:"",                                   note:"" },
+    { num:57,  code:"579",  title:"ТОВ «Будмонтаж»",                          desc:"м-н «Будмаркет»",                    note:"" },
+    { num:58,  code:"582",  title:"ПП Тарковський",                           desc:"м-н «Фламінго»",                     note:"" },
+    { num:59,  code:"583",  title:"КП «Побутсервіс»",                         desc:"офіс Чекалюк",                       note:"" },
+    { num:60,  code:"586",  title:"ПП Васільченко В.В.",                      desc:"кафе «Сдем»",                        note:"Знято" },
+    { num:61,  code:"588",  title:"Фонд соціального страхування",             desc:"",                                   note:"Знято" },
+    { num:62,  code:"797",  title:"«Приватбанк»",                             desc:"",                                   note:"1 арт" },
+    { num:63,  code:"798",  title:"Архів районний трудовий",                  desc:"",                                   note:"" },
+    { num:64,  code:"800",  title:"УПФУ гараж",                               desc:"",                                   note:"" },
+    { num:65,  code:"801",  title:"кв. Заїченко О.М.",                        desc:"",                                   note:"" },
+    { num:66,  code:"1096", title:"ФОП Лук'ян М.Ф.",                         desc:"м-н «Містер»",                       note:"" },
+    { num:67,  code:"1146", title:"«Індекс Банк»",                            desc:"",                                   note:"Знято" },
+    { num:68,  code:"1147", title:"ПП Заїченко О.М.",                         desc:"ювелірний м-н «Аурум»",              note:"" },
+    { num:69,  code:"1149", title:"Упр. газового господарства",               desc:"",                                   note:"" },
+    { num:70,  code:"1150", title:"ТОВ «Атойл»",                             desc:"АЗС №15, 21",                        note:"Знято" },
+    { num:71,  code:"1151", title:"ВАТ «Укрнафта»",                          desc:"АЗС №7",                             note:"" },
+    { num:72,  code:"1152", title:"ДК «Укравтотрансгаз» АГІКС-1",            desc:"",                                   note:"Знято" },
+    { num:73,  code:"1200", title:"ПП Колос Ю.О.",                            desc:"м-н «Світ рослин»",                  note:"Знято" },
+    { num:74,  code:"1220", title:"кв. Шпак М.Я.",                            desc:"",                                   note:"" },
+    { num:75,  code:"1221", title:"СБУ приміщення",                           desc:"",                                   note:"Знято" },
+    { num:76,  code:"1382", title:"ПП Чорноморець СТ",                        desc:"ринок Торг «1000 дрібниць»",         note:"Знято" },
+    { num:77,  code:"1488", title:"ПП Вовк М.А.",                             desc:"фотостудія «Ф-клас»",                note:"" },
+    { num:78,  code:"1489", title:"ПП Мусієнко С.А.",                         desc:"кафе",                               note:"" },
+    { num:79,  code:"1490", title:"ВП УМВС КЗВ",                              desc:"",                                   note:"" },
+    { num:80,  code:"1512", title:"ФОП Шишковська В.П.",                      desc:"м-н «Уют»",                          note:"" },
+    { num:81,  code:"1514", title:"Райсуд ТУ ДСА у Вінницькій обл.",         desc:"",                                   note:"" },
+    { num:82,  code:"1547", title:"СПД Гречко Т.В.",                          desc:"м-н «Київський»",                    note:"" },
+    { num:83,  code:"1548", title:"СПД Гречко Т.В.",                          desc:"м-н «Темп»",                         note:"Знято" },
+    { num:84,  code:"1550", title:"кв. Кашівський П.П.",                      desc:"",                                   note:"" },
+    { num:85,  code:"1573", title:"кв. Гетьман В.Г.",                         desc:"",                                   note:"" },
+    { num:86,  code:"1622", title:"КП «Гайсинпобут»",                         desc:"",                                   note:"" },
+    { num:87,  code:"1623", title:"«Трибуна праці» редакція газети",          desc:"",                                   note:"" },
+    { num:88,  code:"1650", title:"ФОП Меланич О.В.",                         desc:"м-н «Світ подарунків»",              note:"" },
+    { num:89,  code:"1692", title:"ПП Белова С.Ф.",                           desc:"склад",                              note:"" },
+    { num:90,  code:"1709", title:"ТОВ ПК «Зоря Поділля»",                   desc:"",                                   note:"" },
+    { num:91,  code:"1772", title:"ПП Белова С.Ф.",                           desc:"м-н «Будекспрес»",                   note:"" },
+    { num:92,  code:"1785", title:"кв. Суменкова С.М.",                       desc:"",                                   note:"" },
+    { num:93,  code:"1817", title:"ТОВ «Атойл»",                             desc:"АЗС №35",                            note:"" },
+    { num:94,  code:"1818", title:"ПП Кащенко П.М.",                         desc:"м-н «Одяг та взуття»",               note:"Знято" },
+    { num:95,  code:"1819", title:"ПП Швець",                                 desc:"салон краси «Гетьман»",              note:"" },
+    { num:96,  code:"1901", title:"кв. Павлавська Н.Т.",                      desc:"",                                   note:"" },
+    { num:97,  code:"1978", title:"ПП Хитрук Н.Л.",                           desc:"м-н «Сантехнік»",                    note:"" },
+    { num:98,  code:"1980", title:"ПП Гелевенко",                             desc:"м-н «Модесса»",                      note:"Знято" },
+    { num:99,  code:"1985", title:"ПП Іщук Н.С.",                             desc:"м-н «Елен»",                         note:"Знято" },
+    { num:100, code:"1987", title:"ПП Іщук Н.С.",                             desc:"м-н «Дені»",                         note:"2 км" },
+    { num:101, code:"1988", title:"ПП Приходько Н.В.",                        desc:"м-н",                                note:"" },
+    { num:102, code:"1989", title:"Гараж Бордзахівський А.С.",                desc:"",                                   note:"Знято" },
+    { num:103, code:"1990", title:"ФОП Посдничук В.А.",                       desc:"",                                   note:"" },
+    { num:104, code:"1991", title:"Рай СТ",                                   desc:"",                                   note:"" },
+    { num:105, code:"1992", title:"КС «Перше кредитне товариство»",           desc:"",                                   note:"Знято" },
+    { num:106, code:"1994", title:"ПП Пархонюк О.О.",                         desc:"м-н «Автомагазин»",                  note:"" },
+    { num:107, code:"2031", title:"МДЛВМ Ветеринарна медицина",               desc:"",                                   note:"" },
+    { num:108, code:"2053", title:"ПП Колесник В.І.",                         desc:"м-н",                                note:"" },
+    { num:109, code:"2057", title:"ФОП Коберник О.Д.",                        desc:"склад",                              note:"" },
+    { num:110, code:"2058", title:"ТОВ «Атойл»",                             desc:"АЗС №13",                            note:"Знято" },
+    { num:111, code:"2062", title:"ПП Скоропадський А.П.",                    desc:"стомат. кабінет",                    note:"" },
+    { num:112, code:"2063", title:"ФОП Федорут С.О.",                         desc:"склад",                              note:"" },
+    { num:113, code:"2107", title:"ПП Рена К.В.",                             desc:"м-н «Будцентр»",                     note:"" },
+    { num:114, code:"2108", title:"ПП Петух П.С.",                            desc:"м-н",                                note:"" },
+    { num:115, code:"2110", title:"ВАТ «Укртелеком» ЦТЕПМ «2»",              desc:"",                                   note:"" },
+    { num:116, code:"2112", title:"«Банк Хрещатик»",                          desc:"",                                   note:"Знято" },
+    { num:117, code:"2118", title:"кв. Антоненко С.Ф.",                       desc:"",                                   note:"" },
+    { num:118, code:"2119", title:"Нафтова компанія «Народна»",               desc:"",                                   note:"" },
+    { num:119, code:"2132", title:"МРЕВ",                                      desc:"",                                   note:"" },
+    { num:120, code:"2133", title:"СПД Павліченко",                           desc:"м-н «Світ TV»",                      note:"м.Теплик" },
+    { num:121, code:"2134", title:"ЦРЛ м. Теплик",                            desc:"",                                   note:"м.Теплик" },
+    { num:122, code:"2136", title:"СПД Безносюк І.І.",                        desc:"м-н «Анастасія»",                    note:"м.Теплик" },
+    { num:123, code:"2206", title:"УДК в Теплицькому р-ні",                  desc:"",                                   note:"м. Теплик" },
+    { num:124, code:"2210", title:"кв. Підлісний В.А.",                      desc:"",                                   note:"Знято" },
+    { num:125, code:"2211", title:"ПП Цимбалюк І.В.",                        desc:"м-н «Центральний»",                  note:"м. Теплик" },
+    { num:126, code:"2257", title:"ПП Козаков В.С.",                         desc:"м-н «Майстерня»",                    note:"" },
+    { num:127, code:"2258", title:"ПП Кащенко П.М.",                         desc:"м-н «Меркурій»",                     note:"Знято" },
+    { num:128, code:"2259", title:"Міська Рада",                             desc:"",                                   note:"" },
+    { num:129, code:"2383", title:"ПП Семенюк О.В.",                         desc:"кафе «Жу-жу»",                       note:"Знято" },
+    { num:130, code:"2384", title:"ПП Посдинчук В.М.",                       desc:"аптека «Едельвейс»",                 note:"" },
+    { num:131, code:"2386", title:"кв. Єльконіна О.І.",                      desc:"",                                   note:"Знято" },
+    { num:132, code:"2388", title:"кв. Лещенко В.В.",                        desc:"",                                   note:"" },
+    { num:133, code:"2389", title:"«Приватбанк» банкомат",                   desc:"",                                   note:"Знято" },
+    { num:134, code:"2391", title:"ПП Іщенко",                               desc:"м-н «Сучасне шкіряне взуття»",       note:"" },
+    { num:135, code:"2393", title:"Редакція «Гайсинський вісник»",           desc:"",                                   note:"" },
+    { num:136, code:"2402", title:"Відомська З.О.",                          desc:"",                                   note:"" },
+    { num:137, code:"2413", title:"кв. Стецюк Р.Я.",                         desc:"",                                   note:"" },
+    { num:138, code:"2538", title:"кв. Фищук І.В.",                          desc:"",                                   note:"" },
+    { num:139, code:"2539", title:"кв. Стецько В.І.",                        desc:"",                                   note:"" },
+    { num:140, code:"2540", title:"РКП Міжлікарняна аптека",                 desc:"",                                   note:"" },
+    { num:141, code:"2609", title:"КМТ ПП «Славутич сервіс»",               desc:"",                                   note:"Знято" },
+    { num:142, code:"2612", title:"кв. Морозової А.В.",                      desc:"",                                   note:"" },
+    { num:143, code:"2613", title:"ПП Марчук В.М.",                          desc:"",                                   note:"м. Теплик" },
+    { num:144, code:"2638", title:"ПП Кучеренко В.А.",                       desc:"склад м-н",                          note:"" },
+    { num:145, code:"2639", title:"ПП Денисова Л.О.",                        desc:"м-н «Сонечко»",                      note:"" },
+    { num:146, code:"2641", title:"ПП Фенченко М.В.",                        desc:"м-н «Оптика»",                       note:"" },
+    { num:147, code:"2642", title:"ТОВ «Будмонтаж»",                         desc:"",                                   note:"" },
+    { num:148, code:"2643", title:"ТОВ Гайсинтехноцентр",                    desc:"склад",                              note:"" },
+    { num:149, code:"2682", title:"ТОВ «Шик і Блиск»",                       desc:"м-н № 34",                           note:"" },
+    { num:150, code:"2683", title:"ТОВ «Ліра-М»",                            desc:"АЗС",                                note:"" },
+    { num:151, code:"2684", title:"ПП «Окко»",                               desc:"АЗС № 59",                           note:"" },
+    { num:152, code:"2739", title:"Свято-Покровський Храм",                  desc:"",                                   note:"" },
+    { num:153, code:"2761", title:"кв. Рудницької Н.В.",                     desc:"",                                   note:"" },
+    { num:154, code:"2762", title:"СТД Шишковська В.П.",                     desc:"м-н",                                note:"" },
+    { num:155, code:"2765", title:"ТОВ «Зодчий»",                            desc:"склад",                              note:"" },
+    { num:156, code:"2766", title:"Свято-Миколаївський Храм",                desc:"",                                   note:"" },
+    { num:157, code:"2878", title:"ФОП Талабко Т.М.",                        desc:"м-н «Мажор»",                        note:"" },
+    { num:158, code:"2880", title:"ПП Рогульський О.І.",                     desc:"кафе «Вікторія»",                    note:"Знято" },
+    { num:159, code:"2896", title:"ФОП Голуб Г.І.",                          desc:"м-н «Мотолідер»",                    note:"" },
+    { num:160, code:"2946", title:"буд. Заїчков-Коту А.В.",                  desc:"",                                   note:"" },
+    { num:161, code:"3024", title:"ПП Мендусь В.М.",                         desc:"м-н «Одіс»",                         note:"Знято" },
+    { num:162, code:"3025", title:"буд. Мартинюк В.Г.",                      desc:"",                                   note:"" },
+    { num:163, code:"3040", title:"СПД Мендусь В.М.",                        desc:"м-н «Домінант»",                     note:"Знято" },
+    { num:164, code:"3041", title:"ПП Кондратюк О.А.",                       desc:"м-н «Росинка»",                      note:"" },
+    { num:165, code:"3094", title:"ЦРЛ кімната зберігання наркотиків",       desc:"",                                   note:"" },
+    { num:166, code:"3096", title:"ПТ «Ломбард Уманський»",                  desc:"",                                   note:"" },
+    { num:167, code:"3098", title:"кв. Шейнкер Ю.Н.",                        desc:"",                                   note:"Знято" },
+    { num:168, code:"3099", title:"буд. Данильченко С.І.",                   desc:"",                                   note:"" },
+    { num:169, code:"3147", title:"ТОВ «Скіф»",                              desc:"",                                   note:"" },
+    { num:170, code:"3149", title:"ЦРЛ",                                     desc:"",                                   note:"" },
+    { num:171, code:"3150", title:"Територіальний центр соц. обслуговування",desc:"",                                   note:"" },
+    { num:172, code:"3151", title:"кв. Заїченко О.О.",                       desc:"",                                   note:"" },
+    { num:173, code:"3152", title:"буд. Марчук В.І.",                        desc:"",                                   note:"" },
+    { num:174, code:"3153", title:"кв. Гук А.І.",                            desc:"",                                   note:"" },
+    { num:175, code:"3154", title:"кв. Мешок П.С.",                          desc:"",                                   note:"Знято" },
+    { num:176, code:"3155", title:"ПП Адаменко І.Г.",                        desc:"м-н «Спортивний одяг»",              note:"" },
+    { num:177, code:"3156", title:"СЕС",                                      desc:"",                                   note:"" },
+    { num:178, code:"3157", title:"ВАТ «Укрнафта»",                          desc:"АЗС 01/021",                         note:"" },
+    { num:179, code:"3161", title:"ТОВ «Цехове Корм ЛТД»",                  desc:"",                                   note:"" },
+    { num:180, code:"3162", title:"ПП Гуляренко В.В.",                       desc:"м-н «Першотравневий»",               note:"" },
+    { num:181, code:"3358", title:"гараж Несвятого С.М.",                    desc:"",                                   note:"" },
+    { num:182, code:"3359", title:"ОДПУ у Теплицькому р-ні",                 desc:"",                                   note:"" },
+    { num:183, code:"3360", title:"ТОВ «Техноторг-Дон»",                    desc:"",                                   note:"" },
+    { num:184, code:"3377", title:"КУ Гайсинськ. районний медичн. центр первинної медицини", desc:"",                  note:"" },
+    { num:185, code:"3393", title:"кв. Ліщенко О.Л.",                        desc:"",                                   note:"" },
+    { num:186, code:"3572", title:"кв. Поліщук Б.Л.",                        desc:"",                                   note:"" },
+    { num:187, code:"3573", title:"кв. Андрієць П.Й.",                       desc:"",                                   note:"" },
+    { num:188, code:"3574", title:"«Аваль банк»",                            desc:"",                                   note:"" },
+    { num:189, code:"3606", title:"кв. Ковальчук Р.І.",                      desc:"",                                   note:"" },
+    { num:190, code:"3633", title:"КУ Гайсинський районний медичний центр",  desc:"",                                   note:"" },
+    { num:191, code:"3695", title:"буд. Дячук Г.І.",                         desc:"",                                   note:"" },
+    { num:192, code:"3696", title:"кв. Мазур М.А.",                          desc:"",                                   note:"" },
+    { num:193, code:"3697", title:"кв. Хуторна В.А.",                        desc:"",                                   note:"" },
+    { num:194, code:"3698", title:"буд. Розгон О.М.",                        desc:"",                                   note:"" },
+    { num:195, code:"3699", title:"кв. Гончар А.А.",                         desc:"",                                   note:"" },
+    { num:196, code:"3703", title:"ПП Масленікова І.В.",                     desc:"кафе-Експрес",                       note:"" },
+    { num:197, code:"3739", title:"буд. Городній В.І.",                      desc:"",                                   note:"" },
+    { num:198, code:"3740", title:"СПД Тарковська Л.В.",                     desc:"",                                   note:"" },
+    { num:199, code:"3743", title:"Прокуратура Теплицька районна",           desc:"",                                   note:"м. Теплик" },
+    { num:200, code:"3774", title:"ПАТ «Концерн Хлібпром»",                  desc:"",                                   note:"" },
+    { num:201, code:"3808", title:"«Укрпошта»",                              desc:"",                                   note:"" },
+    { num:202, code:"3835", title:"кв. Горбань С.Ф.",                        desc:"",                                   note:"" },
+    { num:203, code:"3836", title:"ТОВ «Монсанто Україна»",                  desc:"",                                   note:"" },
+    { num:204, code:"3840", title:"ФОП Нагорний С.А.",                       desc:"м-н «Імідж»",                        note:"" },
+    { num:205, code:"3841", title:"Упр. ветеринарної медицини",              desc:"Держ Прод Служба",                   note:"" },
+    { num:206, code:"3842", title:"ПТ Ломбард «Бутенко та компанія»",        desc:"",                                   note:"" },
+    { num:207, code:"3843", title:"кв. Мусулевської Л.В.",                   desc:"",                                   note:"" },
+    { num:208, code:"3859", title:"Відділ освіти Гайсинської РДА",           desc:"",                                   note:"" },
+    { num:209, code:"3860", title:"ФОП Балан А.В.",                          desc:"м-н «Клеопатра»",                    note:"" },
+    { num:210, code:"3874", title:"Будяк Н.В.",                              desc:"м-н «Прото»",                        note:"" },
+    { num:211, code:"3875", title:"ФОП Землякова Н.І.",                      desc:"м-н «Авто клад»",                    note:"" },
+    { num:212, code:"3876", title:"ФОП Багачов Ю.Ю.",                        desc:"м-н «CRAND-2»",                      note:"" },
+    { num:213, code:"3879", title:"СПД Папанова Н.М.",                       desc:"«Ідеї вашого дому»",                 note:"" },
+    { num:214, code:"3882", title:"ТОВ «Апекс»",                             desc:"м-н «Автотранспортні запчастини»",   note:"" },
+    { num:215, code:"3883", title:"ФОП Мусієнко Н.В.",                       desc:"м-н «Мандарин»",                     note:"" },
+    { num:216, code:"3884", title:"ФОП Посдинчук В.А.",                      desc:"аптека № 1",                         note:"" },
+    { num:217, code:"3904", title:"ФОП Телейчук О.С.",                       desc:"",                                   note:"" },
+    { num:218, code:"3905", title:"ПП Куцяк Н.М.",                           desc:"",                                   note:"м. Теплик" },
+    { num:219, code:"3906", title:"ФОП Кравець О.М.",                        desc:"м-н «Рес»",                          note:"" },
+    { num:220, code:"3927", title:"«Приватбанк» термінал",                   desc:"",                                   note:"" },
+    { num:221, code:"3928", title:"ТОВ «Ясен-М»",                            desc:"",                                   note:"" },
+    { num:222, code:"3989", title:"ТОВ «Адванс Солюшнз»",                   desc:"",                                   note:"" },
+    { num:223, code:"3990", title:"Петрівський «Нова пошта»",                desc:"",                                   note:"" },
+    { num:224, code:"3991", title:"ФОП Посдинчук В.М.",                      desc:"аптека № 1",                         note:"" },
+    { num:225, code:"4033", title:"буд. Майструк Р.М.",                      desc:"",                                   note:"" },
+    { num:226, code:"4034", title:"ФОП Петрівський Д.Р.",                    desc:"«Нова пошта»",                       note:"" },
+    { num:227, code:"4038", title:"буд. Лащенко Л.В.",                       desc:"",                                   note:"" },
+    { num:228, code:"4048", title:"ФОП Золотухін О.В.",                       desc:"«Holliday»",                         note:"" },
+    { num:229, code:"4049", title:"ФОП Кравець О.М.",                         desc:"",                                   note:"позначка" },
+    { num:230, code:"4050", title:"«Хрещатик банк»",                          desc:"",                                   note:"позначка" },
+    { num:231, code:"4053", title:"ПП Цимбалюк Г.В.",                         desc:"м-н «Центральний»",                  note:"м. Теплик" },
+    { num:232, code:"4055", title:"ТОВ «Адванс Солюшнз»",                     desc:"м-н «Універмаг»",                    note:"" },
+    { num:233, code:"4068", title:"Гайсинська між лікарняна аптека",          desc:"",                                   note:"" },
+    { num:234, code:"4069", title:"ПП Богданович Т.М.",                        desc:"",                                   note:"" },
+    { num:235, code:"4070", title:"ПП Віру",                                   desc:"",                                   note:"" },
+    { num:236, code:"4072", title:"ТОВ «Гайсинтехноцентр»",                   desc:"СТС торговий майданчик",             note:"" },
+    { num:237, code:"4075", title:"ФОП Бражник А.М.",                          desc:"м-н «Шик і Блиск»",                  note:"" },
+    { num:238, code:"4083", title:"ПП Кусюк О.А.",                             desc:"",                                   note:"м. Теплик" },
+    { num:239, code:"4084", title:"ФОП Вітинський В.В.",                       desc:"м-н «Ветеринар»",                    note:"" },
+    { num:240, code:"4085", title:"ФОП Сіньковський В.В.",                     desc:"м-н «Автолідер»",                    note:"" },
+    { num:241, code:"4086", title:"ТОВ «Гайсинтехноцентр»",                   desc:"м-н",                                note:"" },
+    { num:242, code:"4087", title:"«Укргазбанк» відділення № 260/01",          desc:"",                                   note:"" },
+    { num:243, code:"4088", title:"кв. Савчук Л.В.",                           desc:"",                                   note:"" },
+    { num:244, code:"4089", title:"кв. Майструк П.Б.",                         desc:"",                                   note:"" },
+    { num:245, code:"4090", title:"ФОП Мальована І.В.",                        desc:"ювелірн. бутік «Мальва»",            note:"" },
+    { num:246, code:"4119", title:"буд. Рубля О.О.",                           desc:"",                                   note:"позначка" },
+    { num:247, code:"4121", title:"ФОП Рянічева Т.Г.",                         desc:"аптека",                             note:"позначка" },
+    { num:248, code:"4122", title:"кв. Вергелюк Н.П.",                         desc:"",                                   note:"" },
+    { num:249, code:"4123", title:"ПП Пташка О.В.",                            desc:"м-н «Бренд»",                        note:"" },
+    { num:250, code:"4163", title:"СПД Колос Ю.О.",                            desc:"м-н «Світ рослин»",                  note:"позначка" },
+    { num:251, code:"4164", title:"Міський краєзнавчий музей",                 desc:"",                                   note:"" },
+    { num:252, code:"4165", title:"«Приватбанк» термінал",                     desc:"",                                   note:"позначка" },
+    { num:253, code:"4166", title:"буд. Богдан Л.Ф.",                          desc:"",                                   note:"" },
+    { num:254, code:"4167", title:"кв. Демов О.А.",                            desc:"",                                   note:"" },
+    { num:255, code:"4169", title:"Міграційна служба",                         desc:"",                                   note:"позначка" },
+    { num:256, code:"4187", title:"кв. Штеймана Б.С.",                         desc:"",                                   note:"" },
+    { num:257, code:"4188", title:"кв. Шестопал Я.В.",                         desc:"",                                   note:"" },
+    { num:258, code:"4299", title:"«Конекс» аптека",                           desc:"",                                   note:"" },
+    { num:259, code:"4300", title:"ФОП Перкун В.А.",                           desc:"офіс",                               note:"" },
+    { num:260, code:"4301", title:"«Міжнародний інвестиційний банк» банкомат", desc:"",                                   note:"позначка" },
+    { num:261, code:"4320", title:"ТОВ «Пріорис»",                             desc:"",                                   note:"" },
+    { num:262, code:"4377", title:"ССТ «Буг»",                                 desc:"м-н «Ромашка»",                      note:"" },
+    { num:263, code:"4378", title:"буд. Ковальчук В.І.",                       desc:"",                                   note:"" },
+    { num:264, code:"4379", title:"буд. Заколодної Л.М.",                      desc:"",                                   note:"" },
+    { num:265, code:"4380", title:"Свято-Миколаївський храм православної церкви", desc:"",                               note:"" },
+    { num:266, code:"4395", title:"ФОП Цимбалюк О.В.",                         desc:"салон краси",                        note:"" },
+    { num:267, code:"4393", title:"ФОП Яковенко К.П.",                         desc:"«Нова пошта»",                       note:"" },
+    { num:268, code:"4417", title:"буд. Лещенко Д.Л.",                         desc:"",                                   note:"" },
+    { num:269, code:"4435", title:"ФОП Кобилянський О.М.",                     desc:"м-н «Валентинка»",                   note:"" },
+    { num:270, code:"4430", title:"ФОП Кучеренко А.В.",                        desc:"м-н «Прораб»",                       note:"" },
+    { num:271, code:"4431", title:"буд. Бугрим С.Д.",                          desc:"",                                   note:"" },
+    { num:272, code:"4432", title:"«Ломбард Уманський» відділення № 13",       desc:"",                                   note:"" },
+    { num:273, code:"4433", title:"ТОВ Катран",                                desc:"АЗС",                                note:"" },
+    { num:274, code:"4434", title:"«Конекс» аптека",                           desc:"",                                   note:"" },
+    { num:275, code:"4435", title:"ФОП Букатарь А.М.",                         desc:"м-н «Валентинка»",                   note:"позначка" },
+    { num:276, code:"4451", title:"ФОП Гук М.О.",                              desc:"м-н «Автозапчастини»",               note:"" },
+    { num:277, code:"4452", title:"буд. Кучеренко А.В.",                       desc:"",                                   note:"" },
+    { num:278, code:"4453", title:"кв. Ковтун Л.М.",                           desc:"",                                   note:"" },
+    { num:279, code:"4454", title:"«Приватбанк» термінал",                     desc:"",                                   note:"позначка" },
+    { num:280, code:"4455", title:"буд. Козловської О.І.",                     desc:"",                                   note:"" },
+    { num:281, code:"4471", title:"ПАТ «Вінницягаз»",                          desc:"",                                   note:"" },
+    { num:282, code:"4472", title:"ФОП Невідома О.А.",                         desc:"м-н «Сокіл»",                        note:"" },
+    { num:283, code:"4473", title:"кв. Кучеренко Н.Ф.",                        desc:"",                                   note:"" },
+    { num:284, code:"4474", title:"кв. Єльконіна О.І.",                        desc:"",                                   note:"" },
+    { num:285, code:"4475", title:"Гайсинський лісгосп",                       desc:"м-н «Лісовичок»",                    note:"" },
+    { num:286, code:"4476", title:"кв. Рябоконь О.М.",                         desc:"",                                   note:"" },
+    { num:287, code:"4477", title:"кв. Леонової Т.М.",                         desc:"",                                   note:"" },
+    { num:288, code:"4531", title:"ТОВ «АВ Метал груп»",                       desc:"",                                   note:"" },
+    { num:289, code:"4532", title:"ДП «Гайсинський спиртовий завод»",          desc:"",                                   note:"" },
+    { num:290, code:"4533", title:"буд. Кривулько З.В.",                       desc:"",                                   note:"" },
+    { num:291, code:"4534", title:"буд. Сторожук О.В.",                        desc:"",                                   note:"" },
+    { num:292, code:"4535", title:"ФОП Лещенко О.Л.",                          desc:"м-н «Професіонал»",                  note:"" },
+    { num:293, code:"4536", title:"ФОП Кугот П.А.",                            desc:"ветеринарна аптека «Ветсервіс»",     note:"" },
+    { num:294, code:"4537", title:"ДП «Гайсинводоканал»",                      desc:"",                                   note:"" },
+    { num:295, code:"4538", title:"Гайсинська міська рада (дошкільні заклади)",desc:"",                                   note:"" },
+    { num:296, code:"4539", title:"ПП Новаківський Б.В.",                      desc:"",                                   note:"пожарка" },
+    { num:297, code:"4540", title:"буд. Мисіна Л.С.",                          desc:"",                                   note:"" },
+    { num:298, code:"4541", title:"ДП «Гайсинський спиртовий завод»",          desc:"",                                   note:"" },
+    { num:299, code:"4542", title:"ФОП Ковальчук І.В.",                        desc:"м-н",                                note:"" },
+    { num:300, code:"4543", title:"ПП «Тінік-Оіл»",                            desc:"АЗС № 9",                            note:"" },
+    { num:301, code:"4545", title:"ПП Новаківський Б.В.",                      desc:"",                                   note:"" },
+    { num:302, code:"4546", title:"буд. Коломійця А.М.",                       desc:"",                                   note:"" },
+    { num:303, code:"4575", title:"кв. Мартинова П.В.",                        desc:"",                                   note:"" },
+    { num:304, code:"4576", title:"буд. Кальник А.С.",                         desc:"",                                   note:"" },
+    { num:305, code:"4577", title:"буд. Бондара А.В.",                         desc:"",                                   note:"" },
+    { num:306, code:"4582", title:"буд. Цимбал Г.Г.",                          desc:"",                                   note:"" },
+    { num:307, code:"4583", title:"кв. Ветохи В.В.",                           desc:"",                                   note:"" },
+    { num:308, code:"4584", title:"ФОП Нікітішин Д.С.",                        desc:"м-ни",                               note:"" },
+    { num:309, code:"4601", title:"кв. Масленіков В.М.",                       desc:"",                                   note:"" },
+    { num:310, code:"4603", title:"Гайсинська РДА",                            desc:"",                                   note:"" },
+    { num:311, code:"4604", title:"МПКВП «Лебідь»",                            desc:"",                                   note:"" },
+    { num:312, code:"4605", title:"ПП Богдан «Євроаптека»",                    desc:"",                                   note:"" },
+    { num:313, code:"4611", title:"ПП Богдан «Євроаптека»",                    desc:"",                                   note:"пожарка" },
+    { num:314, code:"4641", title:"буд. Листопадський В.П.",                   desc:"",                                   note:"позначка" },
+    { num:315, code:"4642", title:"буд. Такулія Р.Ф.",                         desc:"",                                   note:"позначка" },
+    { num:316, code:"4643", title:"буд. Уродника О.І.",                        desc:"",                                   note:"" },
+    { num:317, code:"4644", title:"кв. Кучеренко В.В.",                        desc:"",                                   note:"" },
+    { num:318, code:"4645", title:"ТОВ «Гайсинський молокозавод»",             desc:"",                                   note:"" },
+    { num:319, code:"4646", title:"ТОВ «ПК Зоря Поділля»",                    desc:"",                                   note:"" },
+    { num:320, code:"4647", title:"ФОП Гуменюк О.М.",                          desc:"м-н",                                note:"" },
+    { num:321, code:"4648", title:"ФОП Ковальчук І.В.",                        desc:"м-н",                                note:"" },
+    { num:322, code:"4649", title:"ФОП Кирилюк К.С.",                          desc:"інтернет-кафе",                      note:"" },
+    { num:323, code:"4650", title:"ТОВ «Фора»",                                desc:"м-н № 201",                          note:"" },
+    { num:324, code:"4729", title:"ВФ «Приватбанк»",                           desc:"банкомат і термінал",                note:"позначка" },
+    { num:325, code:"4730", title:"буд. Посдинчук В.А.",                       desc:"",                                   note:"" },
+    { num:326, code:"4731", title:"буд. Звенигородської О.О.",                 desc:"",                                   note:"" },
+    { num:327, code:"4732", title:"буд. Гладіголова Я.С.",                     desc:"",                                   note:"" },
+    { num:328, code:"4733", title:"буд. Підкожаний Г.М.",                      desc:"",                                   note:"" },
+    { num:329, code:"4734", title:"ТОВ «Дей-Сон логіст продакшн компанія»",   desc:"",                                   note:"позначка" },
+    { num:330, code:"4735", title:"ЦРЛ Гайсинська",                            desc:"",                                   note:"" },
+    { num:331, code:"4736", title:"СПД Мендусь В.М.",                          desc:"кафе-бар «Винний погрібець»",         note:"позначка" },
+    { num:332, code:"4796", title:"буд. Данильченко С.І.",                     desc:"",                                   note:"" },
+    { num:333, code:"4797", title:"ДП «Бджільнянський спирт»",                 desc:"",                                   note:"" },
+   { num:334, code:"4798", title:"буд. Підвашецького В.В.",                desc:"",                                   note:"" },
+    { num:335, code:"4799", title:"гараж Семенюк С.А.",                     desc:"",                                   note:"" },
+    { num:336, code:"4800", title:"буд. Ковалівська О.П.",                  desc:"",                                   note:"" },
+    { num:337, code:"4801", title:"буд. Бойко А.В.",                        desc:"",                                   note:"" },
+    { num:338, code:"4872", title:"буд. Полянської Т.С.",                   desc:"",                                   note:"" },
+    { num:339, code:"4873", title:"буд. Мазуркевич Т.Л.",                   desc:"",                                   note:"" },
+    { num:340, code:"4874", title:"буд. Будяк І.Р.",                        desc:"",                                   note:"" },
+    { num:341, code:"4875", title:"ПТ «Ломбард комод»",                     desc:"",                                   note:"" },
+    { num:342, code:"4910", title:"«Черкаситрансгаз»",                      desc:"с.Носівці",                          note:"" },
+    { num:343, code:"4931", title:"буд. Кохана Г.В.",                       desc:"",                                   note:"" },
+    { num:344, code:"4932", title:"буд. Стецюк М.М.",                       desc:"",                                   note:"" },
+    { num:345, code:"4933", title:"ФОП Березюк Ю.Г.",                       desc:"офіс",                               note:"" },
+    { num:346, code:"4934", title:"ФОП Чайко В.О.",                         desc:"офіс",                               note:"" },
+    { num:347, code:"4935", title:"Гайсинська автошкола ТСО",               desc:"",                                   note:"" },
+    { num:348, code:"4936", title:"Гайсинська СЗШ – інтернат",              desc:"",                                   note:"" },
+    { num:349, code:"4937", title:"ФОП Голомозий А.О.",                     desc:"м-н «Одяг»",                         note:"" },
+    { num:350, code:"4971", title:"ПАТ «Концерн Хлібпром»",                 desc:"",                                   note:"" },
+    { num:351, code:"4986", title:"«Приватбанк»",                           desc:"",                                   note:"позначка" },
+    { num:352, code:"4987", title:"ФОП Митченко В.В.",                      desc:"",                                   note:"" },
+    { num:353, code:"5017", title:"буд. Власюк І.М.",                       desc:"",                                   note:"" },
+    { num:354, code:"5018", title:"буд. Семченко В.І.",                     desc:"",                                   note:"" },
+    { num:355, code:"5019", title:"буд. Цимбал М.П.",                       desc:"",                                   note:"" },
+    { num:356, code:"5020", title:"«Банк Хрещатик»",                        desc:"банкомат",                           note:"" },
+    { num:357, code:"5021", title:"ФОП Рубля А.С.",                         desc:"Ломбард Соломон",                    note:"" },
+    { num:358, code:"5022", title:"ФОП Балан А.В.",                         desc:"автомобільна мийка",                 note:"" },
+    { num:359, code:"5033", title:"ФОП Шпак А.А.",                          desc:"«Шик і блиск»",                      note:"" },
+    { num:360, code:"5037", title:"буд. Галізінського А.Ф.",                desc:"",                                   note:"" },
+    { num:361, code:"5038", title:"буд. Бордихівської С.М.",                desc:"",                                   note:"" },
+    { num:362, code:"5039", title:"буд. Гирич С.Д.",                        desc:"",                                   note:"" },
   ];
 
-  const TOTAL = data.length;
+  const upo = [
+    { num:1,  code:"УПО-1",   title:"«Ломбард «Експрес готівка»",             desc:"",                                   note:"" },
+    { num:2,  code:"УПО-2",   title:"кв. Вербовенко О.В.",                    desc:"",                                   note:"" },
+    { num:3,  code:"УПО-3",   title:"буд. Казакова В.С.",                     desc:"",                                   note:"" },
+    { num:4,  code:"УПО-20",  title:"ФОП Подчас В.Ф.",                        desc:"«Золото сувеніри»",                  note:"" },
+    { num:5,  code:"УПО-21",  title:"ФОП Михайлюк Д.А.",                      desc:"«Пан піца»",                        note:"" },
+    { num:6,  code:"УПО-22",  title:"ТОВ «Цехаве Корм ЛТД»",                 desc:"",                                   note:"" },
+    { num:7,  code:"УПО-23",  title:"кв. Черніченко Н.І.",                    desc:"",                                   note:"" },
+    { num:8,  code:"УПО-24",  title:"кв. Гребенюк С.М.",                      desc:"",                                   note:"" },
+    { num:9,  code:"УПО-25",  title:"буд. Яковенко С.В.",                     desc:"",                                   note:"" },
+    { num:10, code:"УПО-40",  title:"кв. Гетьман Я.В.",                       desc:"",                                   note:"" },
+    { num:11, code:"УПО-41",  title:"ФГ Власюк О.Д.",                         desc:"",                                   note:"" },
+    { num:12, code:"УПО-42",  title:"ТОВ «Ясен-Поділля»",                     desc:"",                                   note:"" },
+    { num:13, code:"УПО-73",  title:"ФОП Кабаровський В.О.",                  desc:"м-н «Будівельник»",                  note:"" },
+    { num:14, code:"УПО-74",  title:"ФГ «Чиста криниця»",                     desc:"",                                   note:"" },
+    { num:15, code:"УПО-75",  title:"СПД Ковальчук С.М.",                     desc:"«Кислицька криниця»",                note:"" },
+    { num:16, code:"УПО-76",  title:"«Ощадбанк»",                             desc:"",                                   note:"" },
+    { num:17, code:"УПО-77",  title:"«Ощадбанк»",                             desc:"банкомат",                           note:"" },
+    { num:18, code:"УПО-78",  title:"«Ощадбанк»",                             desc:"",                                   note:"" },
+    { num:19, code:"УПО-79",  title:"Гайсинське лісове господарство",         desc:"",                                   note:"" },
+    { num:20, code:"УПО-123", title:"ТОВ «ПК Зоря Поділля»",                  desc:"",                                   note:"" },
+  { num:21,  code:"УПО-124", title:"«Приватбанк»",                                    desc:"",                                          note:"позначка" },
+    { num:22,  code:"УПО-125", title:"ФОП Цокур В.Г.",                                  desc:"«Едельвейс»",                               note:"позначка" },
+    { num:23,  code:"УПО-126", title:"ФОП Марчук Р.П.",                                 desc:"м-н «Світ секонд хенд»",                    note:"Знято" },
+    { num:24,  code:"УПО-176", title:"ФОП Петрівська Т.В.",                              desc:"«Нова пошта»",                              note:"" },
+    { num:25,  code:"УПО-184", title:"Гіппократ стоматологічний центр",                 desc:"",                                          note:"" },
+    { num:26,  code:"УПО-208", title:"ПП Невідомий В.В.",                               desc:"кафе «Меркурій»",                           note:"позначка" },
+    { num:27,  code:"УПО-209", title:"ФОП Станішевський Д.П.",                          desc:"«В мережі»",                                note:"позначка" },
+    { num:28,  code:"УПО-216", title:"буд. Голяніус О.М.",                              desc:"",                                          note:"позначка" },
+    { num:29,  code:"УПО-217", title:"ФОП Луцик В.А.",                                  desc:"кафе «Млин»",                               note:"позначка" },
+    { num:30,  code:"УПО-247", title:"кв. Плаксива М.Г.",                               desc:"",                                          note:"позначка" },
+    { num:31,  code:"УПО-248", title:"Стоматологічний центр Гіппократ-Щуки О.В.",       desc:"",                                          note:"пожарка" },
+    { num:32,  code:"УПО-249", title:"ФОП Ковтун Л.М.",                                 desc:"м-н «Техніка»",                             note:"Знято" },
+    { num:33,  code:"УПО-250", title:"ТОВ «Зодчий офіс»",                               desc:"",                                          note:"" },
+    { num:34,  code:"УПО-251", title:"ФОП Василевський Г.В.",                           desc:"«Телефони»",                                note:"Знято" },
+    { num:35,  code:"УПО-252", title:"ФОП Ямковий В.Д.",                                desc:"м-н «Чоловіча та жіноча білизна»",          note:"" },
+    { num:36,  code:"УПО-270", title:"ФОП Дутко І.Б.",                                  desc:"м-н «Комп'ютерний всесвіт»",                note:"" },
+    { num:37,  code:"УПО-276", title:"ФОП Пільганчук О.Д.",                             desc:"м-н «Марго»",                               note:"позначка" },
+    { num:38,  code:"УПО-277", title:"ФОП Поплавська М.М.",                             desc:"м-н «Жжук»",                                note:"Знято" },
+    { num:39,  code:"УПО-278", title:"кв. Кривого О.О.",                                desc:"",                                          note:"" },
+    { num:40,  code:"УПО-279", title:"буд. Гуро А.М.",                                  desc:"",                                          note:"" },
+    { num:41,  code:"УПО-303", title:"ТОВ «Катран»",                                    desc:"АЗС",                                       note:"ТОВ ТАТ-ОЙЛ" },
+    { num:42,  code:"УПО-304", title:"ФОП Деревянко І.В.",                              desc:"м-н «Техноярмарок»",                        note:"" },
+    { num:43,  code:"УПО-305", title:"ФОП Пенедюк М.В.",                                desc:"",                                          note:"" },
+    { num:44,  code:"УПО-333", title:"ФОП Немировська С.М.",                            desc:"м-н «Світлана», «Валентина»",               note:"" },
+    { num:45,  code:"УПО-334", title:"буд. Паурчак В.Г.",                               desc:"",                                          note:"" },
+    { num:46,  code:"УПО-335", title:"кв. Заріпова В.Б.",                               desc:"",                                          note:"" },
+    { num:47,  code:"УПО-336", title:"кв. Саблук В.Г.",                                 desc:"",                                          note:"" },
+    { num:48,  code:"УПО-337", title:"кв. Борзихівської С.М.",                          desc:"",                                          note:"" },
+    { num:49,  code:"УПО-338", title:"кв. Любомської Н.В.",                             desc:"",                                          note:"" },
+    { num:50,  code:"УПО-339", title:"буд. Підлипняка В.В.",                            desc:"",                                          note:"" },
+    { num:51,  code:"УПО-340", title:"буд. Поляк І.В.",                                 desc:"",                                          note:"" },
+    { num:52,  code:"УПО-341", title:"буд. Кугот Л.В.",                                 desc:"",                                          note:"" },
+    { num:53,  code:"УПО-342", title:"ФОП Сивак І.А.",                                  desc:"м-н «Лимон»",                               note:"" },
+    { num:54,  code:"УПО-424", title:"СТОВ «Ренет»",                                    desc:"",                                          note:"м. Теплик" },
+    { num:55,  code:"УПО-450", title:"«Центр зайнятості»",                              desc:"",                                          note:"пожарка" },
+    { num:56,  code:"УПО-451", title:"ФОП Подчас В.Ф.",                                 desc:"м-н «Золото»",                              note:"" },
+    { num:57,  code:"УПО-452", title:"ФОП Подчас В.Ф.",                                 desc:"м-н «Золото сяйво»",                        note:"" },
+    { num:58,  code:"УПО-453", title:"Музей М.Д. Леонтовича",                           desc:"",                                          note:"" },
+    { num:59,  code:"УПО-454", title:"«Тегра Україна ЛТД»",                             desc:"",                                          note:"пожарка" },
+    { num:60,  code:"УПО-470", title:"Музей М.Д. Леонтовича",                           desc:"",                                          note:"пожарка" },
+    { num:61,  code:"УПО-471", title:"буд. Голомозий О.О.",                             desc:"",                                          note:"" },
+    { num:62,  code:"УПО-472", title:"буд. Яковенко В.В.",                              desc:"",                                          note:"" },
+    { num:63,  code:"УПО-473", title:"кв. Салтана Н.М.",                                desc:"",                                          note:"" },
+    { num:64,  code:"УПО-474", title:"кв. Штейман Р.А.",                                desc:"",                                          note:"" },
+    { num:65,  code:"УПО-520", title:"буд. Безносенка О.Ф.",                            desc:"",                                          note:"" },
+    { num:66,  code:"УПО-521", title:"буд. Чорної О.М.",                                desc:"",                                          note:"" },
+    { num:67,  code:"УПО-522", title:"буд. Должкевич Л.Б.",                             desc:"",                                          note:"" },
+    { num:68,  code:"УПО-523", title:"ФОП Браславського Ю.С.",                          desc:"АЗС",                                       note:"" },
+    { num:69,  code:"УПО-590", title:"буд. Юрченко В.А.",                               desc:"",                                          note:"" },
+    { num:70,  code:"УПО-591", title:"буд. Кучер Т.В.",                                 desc:"",                                          note:"" },
+    { num:71,  code:"УПО-592", title:"буд. Планета Т.П.",                               desc:"",                                          note:"" },
+    { num:72,  code:"УПО-593", title:"АППБ «Аваль банк»",                               desc:"",                                          note:"м. Теплик" },
+    { num:73,  code:"УПО-594", title:"Ломбард «Комод» «Горбач О.О. і Компанія»",        desc:"",                                          note:"" },
+    { num:74,  code:"УПО-595", title:"ТОВ «Ла-Віа»",                                    desc:"АЗС",                                       note:"Знято" },
+    { num:75,  code:"УПО-596", title:"УПФУ у Теплицькому р-ні",                         desc:"",                                          note:"" },
+    { num:76,  code:"УПО-597", title:"ДП «Бджільнянський спиртовий завод»",             desc:"склад",                                     note:"Знято" },
+    { num:77,  code:"УПО-598", title:"Центр зайнятості Гайсинський районний",           desc:"",                                          note:"" },
+    { num:78,  code:"УПО-599", title:"Гайсинська між лікарняна аптека № 2",             desc:"",                                          note:"" },
+    { num:79,  code:"УПО-600", title:"ТОВ «ПК «Зоря Поділля»",                          desc:"зоотехнічний відділ",                       note:"" },
+    { num:80,  code:"УПО-601", title:"ТОВ «ПК «Зоря Поділля»",                          desc:"засоби захисту рослин",                     note:"" },
+    { num:81,  code:"УПО-602", title:"ТОВ «ПК «Зоря Поділля»",                          desc:"склад прекурсорів",                         note:"" },
+    { num:82,  code:"УПО-603", title:"ФОП Паніфа О.С.",                                 desc:"",                                          note:"" },
+    { num:83,  code:"УПО-604", title:"ФОП Голуб Т.І.",                                  desc:"м-н «Мотолідер»",                           note:"" },
+    { num:84,  code:"УПО-605", title:"ФОП Березнер Д.В.",                               desc:"кафетерій «Кав'ярня»",                      note:"" },
+    { num:85,  code:"УПО-606", title:"ФОП Белінський П.П.",                             desc:"м-н «Наш караван»",                         note:"" },
+    { num:86,  code:"УПО-607", title:"ФОП Богачов Ю.Ю.",                                desc:"м-н «Гранд»",                               note:"Знято" },
+    { num:87,  code:"УПО-621", title:"буд. Яковенко К.П.",                              desc:"",                                          note:"смт. Теплик" },
+    { num:88,  code:"УПО-622", title:"буд. Мартинюк В.В.",                              desc:"",                                          note:"" },
+    { num:89,  code:"УПО-623", title:"буд. Колодій М.І.",                               desc:"",                                          note:"" },
+    { num:90,  code:"УПО-624", title:"буд. Дмитренко О.А.",                             desc:"",                                          note:"" },
+    { num:91,  code:"УПО-625", title:"кв. Відомська В.В.",                              desc:"",                                          note:"" },
+    { num:92,  code:"УПО-626", title:"кв. Старостенко О.М.",                            desc:"",                                          note:"Знято" },
+    { num:93,  code:"УПО-627", title:"кв. Килимник Н.Д.",                               desc:"",                                          note:"" },
+    { num:94,  code:"УПО-628", title:"кв. Бортник С.О.",                                desc:"",                                          note:"" },
+    { num:95,  code:"УПО-629", title:"кв. Васильченко В.В.",                            desc:"",                                          note:"" },
+    { num:96,  code:"УПО-630", title:"ТОВ «ПК Зоря Поділля»",                           desc:"",                                          note:"пожарка" },
+    { num:97,  code:"УПО-631", title:"ФОП Яковенко З.В.",                               desc:"м-н «I-комп»",                              note:"?" },
+    { num:98,  code:"УПО-632", title:"«Укрпошта»",                                      desc:"",                                          note:"" },
+    { num:99,  code:"УПО-635", title:"буд. Тимошенко Б.М.",                             desc:"",                                          note:"" },
+    { num:100, code:"УПО-636", title:"буд. Салтана Н.М.",                               desc:"",                                          note:"" },
+    { num:101, code:"УПО-637", title:"буд. Голуб Т.І.",                                 desc:"",                                          note:"" },
+    { num:102, code:"УПО-638", title:"буд. Сирота О.Ф.",                                desc:"",                                          note:"" },
+    { num:103, code:"УПО-639", title:"ТОВ «Ріва-Сталь»",                                desc:"",                                          note:"" },
+    { num:104, code:"УПО-640", title:"Теплицька РС УДМС у Вінницькій обл.",             desc:"",                                          note:"смт. Теплик ЗНЯТО" },
+    { num:105, code:"УПО-641", title:"Теплицькі електромережі",                         desc:"",                                          note:"смт. Теплик" },
+    { num:106, code:"УПО-676", title:"ТОВ «НК Рітейл» «Наш край»",                      desc:"",                                          note:"смт. Теплик ЗНЯТО ФОРА" },
+    { num:107, code:"УПО-677", title:"буд. Волошин П.В.",                               desc:"",                                          note:"смт. Теплик" },
+    { num:108, code:"УПО-696", title:"ФОП Круш Б.І.",                                   desc:"деревообробний цех",                        note:"" },
+    { num:109, code:"УПО-761", title:"буд. Лащенко Г.Ю.",                               desc:"",                                          note:"" },
+    { num:110, code:"УПО-796", title:"ТОВ «Корпорація Скіф-96»",                        desc:"",                                          note:"" },
+    { num:111, code:"УПО-797", title:"Теплицький районний центр зайнятості",            desc:"",                                          note:"смт. Теплик" },
+    { num:112, code:"УПО-837", title:"Гайсинський РС УДМС",                             desc:"",                                          note:"пожарка" },
+    { num:113, code:"УПО-838", title:"Теплицька РС УДМС",                               desc:"",                                          note:"смт. Теплик ЗНЯТО" },
+    { num:114, code:"УПО-886", title:"ФОП Максимлюк С.І.",                              desc:"м-н «Економ плюс»",                         note:"" },
+    { num:115, code:"УПО-887", title:"буд. Замкового В.І.",                             desc:"",                                          note:"" },
+    { num:116, code:"УПО-900", title:"кв. Матвєєва Л.І.",                               desc:"",                                          note:"" },
+    { num:117, code:"УПО-901", title:"ДП «Гайсинське лісове господарство»",             desc:"",                                          note:"Знято" },
+    { num:118, code:"УПО-902", title:"Територіальний центр соціального обслуговування", desc:"",                                          note:"" },
+    { num:119, code:"УПО-1053",title:"ТОВ «Корпорація Скіф-96»",                        desc:"",                                          note:"пожарка" },
+    { num:120, code:"УПО-1054",title:"кв. Маленчук Н.О.",                               desc:"",                                          note:"" },
+    { num:121, code:"УПО-1055",title:"буд. Кушнірук В.О.",                              desc:"",                                          note:"Знято" },
+    { num:122, code:"УПО-1056", title:"буд. Нечиталюк І.В.",                                        desc:"",                                              note:"смт Теплик" },
+    { num:123, code:"УПО-1065", title:"буд. Браславського Ю.С.",                                    desc:"",                                              note:"смт Теплик" },
+    { num:124, code:"УПО-1066", title:"кв. Бойко В.П.",                                             desc:"",                                              note:"" },
+    { num:125, code:"УПО-1067", title:"ФОП Подчас В.Ф.",                                            desc:"ювелірний бутік «Золото»",                      note:"" },
+    { num:126, code:"УПО-1068", title:"ТОВ «Подорожник - Вінниця»",                                 desc:"аптека",                                        note:"" },
+    { num:127, code:"УПО-1069", title:"ТОВ «ПК «Зоря Поділля»",                                     desc:"",                                              note:"" },
+    { num:128, code:"УПО-1070", title:"гараж Управління освіти фізичної культури",                  desc:"",                                              note:"Знято" },
+    { num:129, code:"УПО-1074", title:"буд. Колодійчук С.В.",                                       desc:"",                                              note:"Знято" },
+    { num:130, code:"УПО-1075", title:"буд. Косенко Л.П.",                                          desc:"",                                              note:"" },
+    { num:131, code:"УПО-1076", title:"ТОВ «Руш»",                                                  desc:"м-н «Єва-2151»",                                note:"Знято" },
+    { num:132, code:"УПО-1077", title:"ПП фірма «Найс»",                                            desc:"",                                              note:"" },
+    { num:133, code:"УПО-1136", title:"ФОП Чайко В.О.",                                             desc:"приміщення",                                    note:"Знято" },
+    { num:134, code:"УПО-1175", title:"кв. Лактіонова І.В.",                                        desc:"",                                              note:"" },
+    { num:135, code:"УПО-1176", title:"буд. Дегель Г.С.",                                           desc:"",                                              note:"" },
+    { num:136, code:"УПО-1177", title:"«Аваль банк»",                                               desc:"банкомат вул. 1-го Травня, 34",                 note:"" },
+    { num:137, code:"УПО-1178", title:"«Аваль банк»",                                               desc:"банкомат вул. 1-го Травня, 30",                 note:"" },
+    { num:138, code:"УПО-1198", title:"буд. Решетник В.І.",                                         desc:"",                                              note:"" },
+    { num:139, code:"УПО-1199", title:"буд. Чайка О.Д.",                                            desc:"",                                              note:"" },
+    { num:140, code:"УПО-1200", title:"буд. Решетник І.В.",                                         desc:"",                                              note:"" },
+    { num:141, code:"УПО-1201", title:"буд. Бойко П.О.",                                            desc:"",                                              note:"" },
+    { num:142, code:"УПО-1202", title:"буд. Витюк В.А.",                                            desc:"",                                              note:"" },
+    { num:143, code:"УПО-1203", title:"буд. Юрчак Т.А.",                                            desc:"",                                              note:"" },
+    { num:144, code:"УПО-1204", title:"буд. Котенко Н.М.",                                          desc:"",                                              note:"" },
+    { num:145, code:"УПО-1205", title:"буд. Мандибура Л.М.",                                        desc:"",                                              note:"" },
+    { num:146, code:"УПО-1206", title:"буд. Огороднік Н.С.",                                        desc:"",                                              note:"" },
+    { num:147, code:"УПО-1207", title:"буд. Шевчук Л.О.",                                           desc:"",                                              note:"" },
+    { num:148, code:"УПО-1208", title:"гараж Подчас А.О.",                                          desc:"",                                              note:"" },
+    { num:149, code:"УПО-1213", title:"буд. Лещенко Т.О.",                                          desc:"",                                              note:"" },
+    { num:150, code:"УПО-1214", title:"буд. Рудницької Н.В.",                                       desc:"",                                              note:"Знято" },
+    { num:151, code:"УПО-1215", title:"буд. Трохи Т.М.",                                            desc:"",                                              note:"" },
+    { num:152, code:"УПО-1216", title:"кв. Зеленецької К.Г.",                                       desc:"",                                              note:"" },
+    { num:153, code:"УПО-1217", title:"кв. Манченко О.І.",                                          desc:"",                                              note:"" },
+    { num:154, code:"УПО-1218", title:"кв. Шпидри А.П.",                                            desc:"",                                              note:"Знято" },
+    { num:155, code:"УПО-1219", title:"ПрАТ «КонцернХлібпром» ВП «Гайсинхліб»",                    desc:"",                                              note:"" },
+    { num:156, code:"УПО-1300", title:"буд. Максимчук С.М.",                                        desc:"",                                              note:"" },
+    { num:157, code:"УПО-1301", title:"буд. Сторожук В.І.",                                         desc:"",                                              note:"" },
+    { num:158, code:"УПО-1302", title:"Банк «Аваль»",                                               desc:"",                                              note:"" },
+    { num:159, code:"УПО-1303", title:"ФОП Решетняк Л.В.",                                          desc:"кафе «Смакота»",                                note:"" },
+    { num:160, code:"УПО-1323", title:"кв. Яковенко В.К.",                                          desc:"",                                              note:"смт Теплик" },
+    { num:161, code:"УПО-1324", title:"буд. Ворушак В.Б.",                                          desc:"",                                              note:"смт Теплик" },
+    { num:162, code:"УПО-1325", title:"буд. Чорного В.А.",                                          desc:"",                                              note:"" },
+    { num:163, code:"УПО-1326", title:"ПП «Медіа Дністер»",                                         desc:"",                                              note:"Знято" },
+    { num:164, code:"УПО-1327", title:"ФОП Коваліцької О.П.",                                       desc:"косметичний салон",                             note:"Знято" },
+    { num:165, code:"УПО-1328", title:"ТОВ «Преміум Фінанс»",                                       desc:"кіоск обміну валюти",                           note:"" },
+    { num:166, code:"УПО-1337", title:"буд. Гребенюк В.М.",                                         desc:"",                                              note:"" },
+    { num:167, code:"УПО-1338", title:"ТОВ ВД «Нова Інформація»",                                   desc:"",                                              note:"Знято" },
+    { num:168, code:"УПО-1341", title:"буд. Глинчук В.В.",                                          desc:"",                                              note:"" },
+    { num:169, code:"УПО-1342", title:"буд. Кащенко П.М.",                                          desc:"",                                              note:"Знято" },
+    { num:170, code:"УПО-1343", title:"кв. Тимош В.С.",                                             desc:"",                                              note:"" },
+    { num:171, code:"УПО-1344", title:"буд. Тарасюк В.А.",                                          desc:"",                                              note:"смт Теплик" },
+    { num:172, code:"УПО-1345", title:"«Ощадбанк»",                                                 desc:"відділення 10001/0102",                         note:"" },
+    { num:173, code:"УПО-1346", title:"ФОП Максимець Г.О.",                                         desc:"ювелірний бутік",                               note:"смт Теплик" },
+    { num:174, code:"УПО-1347", title:"ПАТ «Укртелеком»",                                           desc:"",                                              note:"" },
+    { num:175, code:"УПО-1348", title:"ФОП Безпалько С.В.",                                         desc:"м-н «Шик і Блиск»",                             note:"смт Теплик" },
+    { num:176, code:"УПО-1349", title:"ФОП Голуб Т.І.",                                             desc:"м-н «Мотолідер 2»",                             note:"" },
+    { num:177, code:"УПО-1350", title:"ПП «Конекс»",                                                desc:"аптека № 99",                                   note:"смт Теплик" },
+    { num:178, code:"УПО-1351", title:"ТОВ «Гайсинський молокозавод»",                              desc:"",                                              note:"" },
+    { num:179, code:"УПО-1352", title:"ПП «Гарантавто»",                                            desc:"",                                              note:"Знято" },
+    { num:180, code:"УПО-1353", title:"СТ «Центральний ринок»",                                     desc:"офіс",                                          note:"смт. Теплик" },
+    { num:181, code:"УПО-1398", title:"ТОВ «Голдентрейд Груп»",                                     desc:"офіс",                                          note:"" },
+    { num:182, code:"УПО-1399", title:"ФОП Врублевський О.В.",                                      desc:"ремонт комп'ютер. техніки",                     note:"Знято" },
+    { num:183, code:"УПО-1415", title:"ТОВ «Скіф-96»",                                              desc:"спортивний зал",                                note:"" },
+    { num:184, code:"УПО-1416", title:"ТОВ «Скіф-96»",                                              desc:"спортивна база",                                note:"" },
+    { num:185, code:"УПО-1417", title:"ТОВ «Агат-А»",                                               desc:"нафтова база",                                  note:"" },
+    { num:186, code:"УПО-1418", title:"Гайсинська район. держ. лікарня ветерин. медицини",          desc:"",                                              note:"" },
+    { num:187, code:"УПО-1419", title:"ФОП Ременюк С.М.",                                           desc:"м-н «Київстар»",                                note:"" },
+    { num:188, code:"УПО-1420", title:"ССТ «Буг»",                                                  desc:"торгово-офісне приміщення",                     note:"смт. Теплик" },
+    { num:189, code:"УПО-1427", title:"ССТ «Буг»",                                                  desc:"",                                              note:"пожарка" },
+    { num:190, code:"УПО-1428", title:"буд. Ткаченко А.С.",                                         desc:"",                                              note:"" },
+    { num:191, code:"УПО-1429", title:"ПАТ «Вінницягаз»",                                           desc:"",                                              note:"???" },
+    { num:192, code:"УПО-1661", title:"ПрАТ «Зернопродукт МХП»",                                    desc:"склад",                                         note:"" },
+    { num:193, code:"УПО-1662", title:"ФОП Сніжко Т.П.",                                            desc:"ювелірний бутік «Укрзолото»",                   note:"" },
+    { num:194, code:"УПО-1663", title:"КУ «Територіальний центр соціального обслуговування»",       desc:"",                                              note:"пожарка" },
+    { num:195, code:"УПО-1664", title:"ФОП Петрівська Т.В.",                                        desc:"«Нова пошта»",                                  note:"пожарка" },
+    { num:196, code:"УПО-1665", title:"УДКСУ у Теплицькому р-ні",                                   desc:"",                                              note:"смт. Теплик" },
+    { num:197, code:"УПО-1666", title:"ТОВ «Компанія Трейд Ойл»",                                   desc:"",                                              note:"пожарка / Знято" },
+    { num:198, code:"УПО-1667", title:"ФОП Ковальчук Л.Ю.",                                         desc:"офіс",                                          note:"" },
+    { num:199, code:"УПО-1668", title:"буд. Черепаха В.Г.",                                         desc:"",                                              note:"" },
+    { num:200, code:"УПО-1669", title:"буд. Хитрук І.М.",                                           desc:"",                                              note:"" },
+    { num:201, code:"УПО-1670", title:"кв. Солодка О.П.",                                           desc:"",                                              note:"" },
+    { num:202, code:"УПО-1671", title:"кв. Кучерук В.М.",                                           desc:"",                                              note:"" },
+    { num:203, code:"УПО-1672", title:"гараж Мазепи С.В.",                                          desc:"",                                              note:"" },
+    { num:204, code:"УПО-1673", title:"ФОП Лук'ян М.Ф.",                                            desc:"«Майстер»",                                     note:"пожарка" },
+    { num:205, code:"УПО-1674", title:"ЦНАП та державної реєстрації",                               desc:"",                                              note:"" },
+    { num:206, code:"УПО-1675", title:"буд. Марчук І.В.",                                           desc:"",                                              note:"смт. Теплик" },
+    { num:207, code:"УПО-1676", title:"буд. Черниш Н.В.",                                           desc:"",                                              note:"Знято" },
+    { num:208, code:"УПО-1677", title:"буд. Гончар Н.М.",                                           desc:"",                                              note:"" },
+    { num:209, code:"УПО-1678", title:"буд. Бурмега В.В.",                                          desc:"",                                              note:"Знято" },
+    { num:210, code:"УПО-1679", title:"буд. Балан А.В.",                                            desc:"",                                              note:"Знято" },
+    { num:211, code:"УПО-1680", title:"буд. Пташник О.В.",                                          desc:"",                                              note:"" },
+    { num:212, code:"УПО-1681", title:"буд. Бордовська Н.П.",                                       desc:"",                                              note:"" },
+    { num:213, code:"УПО-1683", title:"буд. Грабчак І.В.",                                          desc:"",                                              note:"" },
+    { num:214, code:"УПО-1684", title:"кв. Дейнекової Н.Д.",                                        desc:"",                                              note:"" },
+    { num:215, code:"УПО-1685", title:"Гайсинська ОДПІ ГУДФС",                                      desc:"",                                              note:"" },
+    { num:216, code:"УПО-1751", title:"ФОП Трохимчук А.В.",                                         desc:"м-н «Покрівля і фасад»",                        note:"Зміна назви" },
+    { num:217, code:"УПО-1752", title:"ФОП Герасименко Р.А.",                                        desc:"м-н «Дерево Буд»",                              note:"" },
+    { num:218, code:"УПО-1753", title:"ФОП Нечипорук В.М.",                                         desc:"м-н «Техно Топ»",                               note:"" },
+    { num:219, code:"УПО-1754", title:"ФОП Поліщук Ю.П.",                                           desc:"салон краси",                                   note:"Знято" },
+    { num:220, code:"УПО-1755", title:"ФОП Конотопенко В.А.",                                       desc:"кафе «Дует»",                                   note:"" },
+    { num:221, code:"УПО-1756", title:"ПрАТ «Гайсинське СТП «Агромаш»",                             desc:"",                                              note:"" },
+    { num:222, code:"УПО-1757", title:"Краснопільська сільська рада",                               desc:"",                                              note:"" },
+    { num:223, code:"УПО-1772", title:"ФОП Бондар І.І.",                                            desc:"приміщення тех.огляду",                         note:"" },
+    { num:224, code:"УПО-1773", title:"ФОП Борзихівський О.С.",                                     desc:"м-н «Новий маркет»",                            note:"Знято" },
+    { num:225, code:"УПО-1774", title:"ФОП Березнер Д.В.",                                          desc:"кафетерій",                                     note:"" },
+    { num:226, code:"УПО-1869", title:"ФОП Кугот П.А.",                                             desc:"ветеринарна аптека",                            note:"" },
+    { num:227, code:"УПО-1870", title:"ФОП Пучковська Т.С.",                                        desc:"м-н «Мрія»",                                    note:"Знято" },
+    { num:228, code:"УПО-1871", title:"СО «Гайсинські ЕМ»",                                         desc:"",                                              note:"" },
+    { num:229, code:"УПО-1872", title:"КП «Гайсин водоканал»",                                      desc:"Бєлєндіївський водозабор",                      note:"" },
+    { num:230, code:"УПО-1873", title:"КП «Гайсин водоканал»",                                      desc:"Кучурівський водозабор",                        note:"" },
+    { num:231, code:"УПО-1909", title:"буд. Березнер І.Г.",                                         desc:"",                                              note:"" },
+    { num:232, code:"УПО-1910", title:"Краснопільська сільська рада",                               desc:"",                                              note:"" },
+    { num:233, code:"УПО-1937", title:"ФОП Лазоренко В.А.",                                         desc:"м-н «АКБ +»",                                   note:"" },
+    { num:234, code:"УПО-1938", title:"ФОП Гетьман В.Г.",                                           desc:"торговельний центр",                            note:"пожарка" },
+    { num:235, code:"УПО-1939", title:"Гайсинськ. РУП ГУНП у Вінницькій обл.",                      desc:"кабінет РСО № 27а",                             note:"" },
+    { num:236, code:"УПО-1940", title:"Гайсинське МРВ СБУ",                                         desc:"приміщення",                                    note:"Знято" },
+    { num:237, code:"УПО-1941", title:"ТОВ «Магнум Енерджі»",                                       desc:"приміщення АГЗС",                               note:"" },
+    { num:238, code:"УПО-1942", title:"ФОП Балан А.В.",                                             desc:"кафе «Бахус»",                                  note:"" },
+    { num:239, code:"УПО-1967", title:"ТОВ «Поділлянафтотрейд»",                                    desc:"АЗС",                                           note:"" },
+    { num:240, code:"УПО-1968", title:"ФОП Кобелянський А.М.",                                      desc:"«Рибальство»",                                  note:"" },
+    { num:241, code:"УПО-1969", title:"ФОП Козачук Т.М.",                                           desc:"м-н «Центр взуття та одягу»",                   note:"" },
+    { num:242, code:"УПО-1970", title:"Ощадбанк",                                                   desc:"термінал",                                      note:"" },
+    { num:243, code:"УПО-1971", title:"кв. Іваха М.В.",                                             desc:"",                                              note:"" },
+    { num:244, code:"УПО-1972", title:"буд. Козловський Б.О.",                                      desc:"",                                              note:"" },
+    { num:245, code:"УПО-1973", title:"Архів Гайсинської районної держ.адмін. РДА",                 desc:"",                                              note:"пожарка" },
+    { num:246, code:"УПО-2011", title:"ФГ «Вікторія – Терра»",                                      desc:"приміщення",                                    note:"" },
+    { num:247, code:"УПО-2012", title:"ФОП Герсак Р.М.",                                            desc:"м-н «Домашнє свіже м'ясо»",                     note:"Гуркіна" },
+    { num:248, code:"УПО-2013", title:"ФОП Голуб М.М.",                                             desc:"торгівельний майданчик",                        note:"" },
+    { num:249, code:"УПО-2014", title:"ТОВ «Наш Караван»",                                          desc:"м-н",                                           note:"" },
+    { num:250, code:"УПО-2015", title:"ТОВ «Новобуд – 2016»",                                       desc:"ФОП Рудий Ю.Є.",                                note:"" },
+    { num:251, code:"УПО-2016", title:"ФОП Кирдан Т.І.",                                            desc:"м-н «Продуктовий»",                             note:"" },
+    { num:252, code:"УПО-2039", title:"ФОП Сміяк О.О.",                                             desc:"м-н «Техніка»",                                 note:"" },
+    { num:253, code:"УПО-2040", title:"ФОП Посаднюк В.А.",                                          desc:"аптечний пункт",                                note:"" },
+    { num:254, code:"УПО-2041", title:"ТОВ «ПК Зоря Поділля»",                                      desc:"",                                              note:"" },
+    { num:255, code:"УПО-2065", title:"ФОП Балан А.В.",                                             desc:"м-н",                                           note:"" },
+    { num:256, code:"УПО-2066", title:"ФОП Козаченко М.В.",                                         desc:"кабінет УЗД",                                   note:"" },
+    { num:257, code:"УПО-2067", title:"ФОП Кобелянський А.М.",                                      desc:"м-н «Catfish»",                                 note:"?" },
+    { num:258, code:"УПО-2068", title:"ФОП Кобелянський А.М.",                                      desc:"м-н «Риба»",                                    note:"?" },
+    { num:259, code:"УПО-2069", title:"ФОП Малімон Ю.В.",                                           desc:"м-н «Територія якісних цін»",                   note:"Знято" },
+    { num:260, code:"УПО-2070", title:"ФОП Стасюк І.В.",                                            desc:"м-н «Калина»",                                  note:"" },
+    { num:261, code:"УПО-2071", title:"КУ «Інклюзивно-ресурсний центр»",                            desc:"приміщення",                                    note:"" },
+    { num:262, code:"УПО-2072", title:"ПП «НАЙС»",                                                  desc:"аптека «Здорова родина»",                       note:"" },
+    { num:263, code:"УПО-2073", title:"буд. Гук А.І.",                                              desc:"",                                              note:"" },
+    { num:264, code:"УПО-2100", title:"буд. Коновальчук М.Т.",                                      desc:"",                                              note:"" },
+    { num:265, code:"УПО-2101", title:"кв. Коновальчук Г.М.",                                       desc:"",                                              note:"" },
+    { num:266, code:"УПО-2102", title:"буд. Кравченко М.О.",                                        desc:"",                                              note:"" },
+    { num:267, code:"УПО-2103", title:"буд. Дмитренко В.О.",                                        desc:"",                                              note:"" },
+    { num:268, code:"УПО-2104", title:"буд. Кирилюк В.В.",                                          desc:"",                                              note:"" },
+    { num:269, code:"УПО-2105", title:"буд. Возняк І.І.",                                           desc:"",                                              note:"" },
+    { num:270, code:"УПО-2106", title:"ФОП Подчас В.Ф.",                                            desc:"відділ торгівельних центрів: «Зелений світ» «Крамниця творчості»", note:"" },
+    { num:271, code:"УПО-2107", title:"Служба у справах дітей Гайсинської міської ради",            desc:"",                                              note:"" },
+    { num:272, code:"УПО-2116", title:"кв. Стецюк С.М.",                                            desc:"",                                              note:"" },
+    { num:273, code:"УПО-2117", title:"буд. Гаврилишина О.М.",                                      desc:"",                                              note:"" },
+    { num:274, code:"УПО-2118", title:"буд. Чекалюк М.П.",                                          desc:"",                                              note:"" },
+    { num:275, code:"УПО-2119", title:"буд. Перкун В.А.",                                           desc:"",                                              note:"" },
+    { num:276, code:"УПО-2120", title:"ПП «Агропостач»",                                            desc:"",                                              note:"" },
+    { num:277, code:"УПО-2121", title:"ФОП Кучеренко В.А.",                                         desc:"кафе «Гостинний»",                              note:"Знято" },
+    { num:278, code:"УПО-2122", title:"ФОП Мурзін С.В.",                                            desc:"м-н «Червоний маркет»",                         note:"" },
+    { num:279, code:"УПО-2123", title:"Гайсинський пенсійний фонд",                                 desc:"",                                              note:"" },
+    { num:280, code:"УПО-2124", title:"ФОП Кугот П.А.",                                             desc:"ветеринарна аптека",                            note:"пожарка" },
+    { num:281, code:"УПО-2125", title:"Відділ освіти Гайсинської міської ради, гімназія № 1",       desc:"",                                              note:"" },
+    { num:282, code:"УПО-2126", title:"ТОВ Теплицький відгодівельний комплекс",                     desc:"",                                              note:"" },
+    { num:283, code:"УПО-2127", title:"ФГ «Крокус»",                                                desc:"офіс",                                          note:"" },
+    { num:284, code:"УПО-2128", title:"ПП «НАЙС»",                                                  desc:"аптека «Здорова родина»",                       note:"смт. Теплик" },
+    { num:285, code:"УПО-2129", title:"ФОП Марчук І.В.",                                            desc:"м-н «Шпалери»",                                 note:"смт. Теплик" },
+    { num:286, code:"УПО-2130", title:"МПП «Фірма Гарант»",                                         desc:"офіс",                                          note:"смт. Теплик" },
+    { num:287, code:"УПО-2131", title:"ФОП Дубенкова Л.В.",                                         desc:"пекарня",                                       note:"смт. Теплик" },
+    { num:288, code:"УПО-2138", title:"ФОП Бузила С.С.",                                            desc:"м-н «Ярмарок»",                                 note:"" },
+    { num:289, code:"УПО-2139", title:"ТОВ «Есо-Автотехнікс»",                                      desc:"м-н «Автозапчастини»",                          note:"" },
+    { num:290, code:"УПО-2140", title:"ТОВ «Тандем – Ч»",                                           desc:"СТО",                                           note:"" },
+    { num:291, code:"УПО-2141", title:"буд. Голомовзий А.О.",                                       desc:"",                                              note:"" },
+    { num:292, code:"УПО-2142", title:"кв. Котенко Т.С.",                                           desc:"",                                              note:"" },
+    { num:293, code:"УПО-2156", title:"кв. Должкевич Л.Б.",                                         desc:"",                                              note:"" },
+    { num:294, code:"УПО-2157", title:"кв. Некрут В.Ю.",                                            desc:"",                                              note:"" },
+    { num:295, code:"УПО-2158", title:"буд. Мельникова В.В.",                                       desc:"",                                              note:"" },
+    { num:296, code:"УПО-2159", title:"буд. Чорномаз В.М.",                                         desc:"",                                              note:"" },
+    { num:297, code:"УПО-2160", title:"буд. Куліцький М.М.",                                        desc:"",                                              note:"" },
+    { num:298, code:"УПО-2161", title:"ФОП Лещенко О.Д.",                                           desc:"агромаркет «Нива»",                             note:"" },
+    { num:299, code:"УПО-2162", title:"ФОП Петрівська Т.В.",                                        desc:"«Нова пошта»",                                  note:"пожарка" },
+    { num:300, code:"УПО-2163", title:"ФОП Дубковська М.В.",                                        desc:"міні-маркет «Бджілка»",                         note:"" },
+    { num:301, code:"УПО-2164", title:"ФОП Нетребко І.А.",                                          desc:"ювелірний бутік «Укрзолото»",                   note:"" },
+    { num:302, code:"УПО-2174", title:"ТОВ «Вінницягаз збут»",                                      desc:"",                                              note:"Знято" },
+    { num:303, code:"УПО-2175", title:"ПП «Вінтехпостач»",                                          desc:"офіс, склад",                                   note:"" },
+    { num:304, code:"УПО-2234", title:"ТОВ «Новобуд – 2016»",                                       desc:"приміщення консьєржа",                          note:"Знято КТС" },
+    { num:305, code:"УПО-2235", title:"ТОВ «Теплицький насіннєвий завод»",                          desc:"",                                              note:"" },
+    { num:306, code:"УПО-2236", title:"ТОВ «Альянс Рітейл Груп»",                                   desc:"м-н «Домашній маркет»",                         note:"Знято" },
+    { num:307, code:"УПО-2237", title:"Гайсинська окружна прокуратура",                             desc:"",                                              note:"" },
+    { num:308, code:"УПО-2238", title:"ФОП Петрівська Т.В.",                                        desc:"відділення «Нова пошта»",                       note:"" },
+    { num:309, code:"УПО-2239", title:"ФОП Бура І.С.",                                              desc:"м-н «Комп'ютерний всесвіт»",                    note:"" },
+    { num:310, code:"УПО-2240", title:"буд. Щуровської В.Л.",                                       desc:"",                                              note:"" },
+    { num:311, code:"УПО-2241", title:"буд. Пламаділа С.В.",                                        desc:"",                                              note:"" },
+    { num:312, code:"УПО-2242", title:"буд. Казанцаєва Н.Г.",                                       desc:"",                                              note:"" },
+    { num:313, code:"УПО-2243", title:"буд. Медяк Т.В.",                                            desc:"",                                              note:"" },
+    { num:314, code:"УПО-2269", title:"ФОП Гуліка Н.С.",                                            desc:"склад",                                         note:"" },
+    { num:315, code:"УПО-2270", title:"ФОП Гуліка Н.С.",                                            desc:"«Крамниця солодощів»",                          note:"" },
+    { num:316, code:"УПО-2271", title:"ФОП Зеленський В.С.",                                        desc:"",                                              note:"" },
+    { num:317, code:"УПО-2272", title:"ТОВ «Люкс 24»",                                              desc:"АЗС",                                           note:"" },
+    { num:318, code:"УПО-2273", title:"ТОВ «Преміум Фінанс»",                                       desc:"обмін валют",                                   note:"" },
+    { num:319, code:"УПО-2274", title:"АТ «Ощадбанк»",                                              desc:"відділення",                                    note:"" },
+    { num:320, code:"УПО-2275", title:"АТ «Ощадбанк»",                                              desc:"термінал",                                      note:"" },
+    { num:321, code:"УПО-2301", title:"буд. Семененко А.В.",                                        desc:"",                                              note:"" },
+    { num:322, code:"УПО-2302", title:"буд. Бровко Д.В.",                                           desc:"",                                              note:"" },
+    { num:323, code:"УПО-2303", title:"ФОП Волкова А.В.",                                           desc:"кіоск тютюнових виробів",                       note:"Знято" },
+    { num:324, code:"УПО-2304", title:"ФОП Волкова А.В.",                                           desc:"кіоск тютюнових виробів",                       note:"Знято" },
+    { num:325, code:"УПО-2305", title:"ТОВ «НАЙС»",                                                 desc:"аптека",                                        note:"" },
+    { num:326, code:"УПО-2306", title:"ТОВ «Наш караван»",                                          desc:"м-н",                                           note:"" },
+    { num:327, code:"УПО-2351", title:"Школа ЗСО І-ІІІ ст. № 1",                                   desc:"",                                              note:"" },
+    { num:328, code:"УПО-2352", title:"Школа ЗСО І-ІІІ ст. № 2",                                   desc:"",                                              note:"" },
+    { num:329, code:"УПО-2353", title:"ФОП Музика С.О.",                                            desc:"м-н «Козацькі напівфабрикати»",                 note:"" },
+    { num:330, code:"УПО-2361", title:"Школа ЗСО І-ІІІ ст. № 3",                                   desc:"",                                              note:"" },
+    { num:331, code:"УПО-2362", title:"Школа № 4",                                                  desc:"",                                              note:"" },
+    { num:332, code:"УПО-2363", title:"Школа № 5",                                                  desc:"",                                              note:"" },
+    { num:333, code:"УПО-2364", title:"Школа № 6",                                                  desc:"",                                              note:"" },
+    { num:334, code:"УПО-2365", title:"Школа ЗСО І-ІІІ ст. с. Куна",                               desc:"",                                              note:"" },
+    { num:335, code:"УПО-2366", title:"Школа ЗСО І-ІІІ ст. с. Харпачка",                           desc:"",                                              note:"" },
+    { num:336, code:"УПО-2367", title:"Школа ЗСО І-ІІІ ст. с. Чечелівка",                          desc:"",                                              note:"" },
+    { num:337, code:"УПО-2368", title:"Школа ЗСО І-ІІІ ст. с. Ярмолинці",                          desc:"",                                              note:"" },
+    { num:338, code:"УПО-2391", title:"Школа ЗСО І-ІІІ ст. с. Таншорн",                            desc:"",                                              note:"" },
+    { num:339, code:"УПО-2392", title:"Школа ЗСО І-ІІІ ст. с. Гунча",                              desc:"",                                              note:"" },
+    { num:340, code:"УПО-2393", title:"Школа ЗСО І-ІІІ ст. с. Бандурі",                            desc:"",                                              note:"" },
+    { num:341, code:"УПО-2394", title:"Школа ЗСО І-ІІІ ст. с. Кіблич",                             desc:"",                                              note:"" },
+    { num:342, code:"УПО-2421", title:"АТ «Райффайзен банк»",                                       desc:"банкомат",                                      note:"" },
+    { num:343, code:"УПО-2422", title:"ТОВ «Наш караван»",                                          desc:"м-н",                                           note:"" },
+    { num:344, code:"УПО-2423", title:"ТОВ «АВ Метал груп»",                                        desc:"м-н склад",                                     note:"" },
+    { num:345, code:"УПО-2424", title:"ТОВ «Нафтогруппа - 2005»",                                   desc:"АЗС",                                           note:"" },
+    { num:346, code:"УПО-2425", title:"ТОВ «Дніпро – М»",                                           desc:"м-н",                                           note:"" },
+    { num:347, code:"УПО-2426", title:"ФОП Койчев І.В.",                                            desc:"кіоск тютюнових виробів № 3",                   note:"Знято" },
+    { num:348, code:"УПО-2427", title:"ФОП Койчев І.В.",                                            desc:"кіоск тютюнових виробів № 4",                   note:"Знято" },
+    { num:349, code:"УПО-2428", title:"кв. Ветохи В.В.",                                            desc:"",                                              note:"" },
+    { num:350, code:"УПО-2429", title:"кв. Цвігун В.Ю.",                                            desc:"",                                              note:"Знято" },
+    { num:351, code:"УПО-2430", title:"буд. Шаповал Н.П.",                                          desc:"",                                              note:"" },
+    { num:352, code:"УПО-2431", title:"буд. Савельєва М.Г.",                                        desc:"",                                              note:"" },
+    { num:353, code:"УПО-2432", title:"ФОП Войтко Н.М.",                                            desc:"м-н одягу",                                     note:"Знято" },
+    { num:354, code:"УПО-2433", title:"ФОП Плахотнюк Т.В.",                                         desc:"м-н продуктів",                                 note:"" },
+    { num:355, code:"УПО-2560", title:"ФОП Масленкова І.В.",                                        desc:"кафе «Експрес»",                                note:"Знято" },
+    { num:356, code:"УПО-2561", title:"ТОВ «Вигідна покупка»",                                      desc:"м-н «Аврора»",                                  note:"Знято" },
+    { num:357, code:"УПО-2562", title:"буд. Бернацький В.Ю.",                                       desc:"",                                              note:"" },
+    { num:358, code:"УПО-2563", title:"буд. Семенюк В.М.",                                          desc:"",                                              note:"" },
+    { num:359, code:"УПО-2598", title:"ФОП Землякова Н.І.",                                         desc:"м-н «День рибака»",                             note:"" },
+    { num:360, code:"УПО-2599", title:"ФОП Черепаха О.Д.",                                          desc:"м-н техніки",                                   note:"" },
+    { num:361, code:"УПО-2600", title:"Виконавчий округ Вінницької області Целіна",                 desc:"",                                              note:"" },
+    { num:362, code:"УПО-2601", title:"ТОВ «ПК Зоря Поділля»",                                      desc:"склад",                                         note:"" },
+    { num:363, code:"УПО-2602", title:"ТОВ «Авто Стандарт Україна»",                                desc:"офіс, склад",                                   note:"" },
+    { num:364, code:"УПО-2603", title:"ПрАТ «Зернопродукт МХП»",                                    desc:"зерносклад",                                    note:"" },
+    { num:365, code:"УПО-2604", title:"Краснопільська сільська рада Гранівський старостат",         desc:"приміщення",                                    note:"" },
+    { num:366, code:"УПО-2605", title:"ОЗ «Теплицька зш І-ІІІ СТ. № 1»",                           desc:"приміщення",                                    note:"" },
+    { num:367, code:"УПО-2622", title:"ФОП Мусієнко С.А.",                                          desc:"кафе «Рандеву»",                                note:"" },
+    { num:368, code:"УПО-2623", title:"ФОП Гуляренко В.В.",                                         desc:"м-н «ГАІ»",                                     note:"" },
+    { num:369, code:"УПО-2624", title:"ФОП Івасюк С.М.",                                            desc:"м-н «Буллона»",                                 note:"" },
+    { num:370, code:"УПО-2625", title:"ФОП Ременюк С.М.",                                           desc:"м-н «Київстар»",                                note:"" },
+    { num:371, code:"УПО-2626", title:"ФОП Корнієнко А.Д.",                                         desc:"м-н «Військторг»",                              note:"" },
+    { num:372, code:"УПО-2627", title:"СТОВ «Ренет» КПП",                                           desc:"склад",                                         note:"" },
+    { num:373, code:"УПО-2628", title:"СТОВ «Ренет» КПП",                                           desc:"склади",                                        note:"" },
+    { num:374, code:"УПО-2629", title:"ТОВ «Подорожник Вінниця»",                                   desc:"аптека «Подорожник»",                           note:"" },
+    { num:375, code:"УПО-2630", title:"Прокуратура Вінницька обласна",                              desc:"",                                              note:"" },
+    { num:376, code:"УПО-2631", title:"ПП «Ломбард № 1» ТОВ «Контракт-Груп і компанія»",           desc:"",                                              note:"" },
+    { num:377, code:"УПО-2632", title:"ТОВ «Ріва Сталь»",                                           desc:"СТС",                                           note:"" },
+    { num:378, code:"УПО-2633", title:"ФОП Мусієнко Н.В.",                                          desc:"м-н - бар «Круїз»",                             note:"" },
+    { num:379, code:"УПО-2634", title:"ТОВ «ПК «Зоря Поділля»",                                     desc:"склад",                                         note:"" },
+    { num:380, code:"УПО-2686", title:"ФОП Матвєєв В.В.",  },
+    { num:381, code:"УПО-2687", title:"буд. Демидик Л.В.",                                          desc:"",                                              note:"" },
+    { num:382, code:"УПО-2715", title:"буд. Гордієнко А.А.",                                        desc:"",                                              note:"" },
+    { num:383, code:"УПО-2716", title:"буд. Савіцька Ж.Й.",                                         desc:"",                                              note:"" },
+    { num:384, code:"УПО-2717", title:"ФОП Грищенко Г.О.",                                          desc:"м-н «Автозапчастини»",                          note:"" },
+    { num:385, code:"УПО-2718", title:"ФОП Гуліка Н.С.",                                            desc:"м-н «Крамниця солодощів»",                      note:"Знято" },
+    { num:386, code:"УПО-2719", title:"ФОП Гуліка Н.С.",                                            desc:"м-н «Спорт стиль»",                             note:"" },
+    { num:387, code:"УПО-2720", title:"ФОП Розумович О.О.",                                         desc:"косметичний кабінет «Венера»",                  note:"" },
+    { num:388, code:"УПО-2721", title:"ФОП Кирилюк Ю.В.",                                           desc:"салон краси",                                   note:"" },
+    { num:389, code:"УПО-2722", title:"ФОП Борис С.К.",                                             desc:"м-н «Орхідея»",                                 note:"" },
+    { num:390, code:"УПО-2723", title:"АТ «Укрпошта»",                                              desc:"кімната зберігання зброї",                      note:"" },
+    { num:391, code:"УПО-2724", title:"ТОВ «Грандекс Трейд»",                                       desc:"м-н",                                           note:"" },
+    { num:392, code:"УПО-2725", title:"ЗДО «Сонечко»",                                              desc:"",                                              note:"" },
+    { num:393, code:"УПО-2726", title:"ЗДО «Веселка»",                                              desc:"",                                              note:"" },
+    { num:394, code:"УПО-2727", title:"ЗДО «Дзвіночок»",                                            desc:"",                                              note:"" },
+    { num:395, code:"УПО-2728", title:"ЗДО «Веснянка»",                                             desc:"",                                              note:"" },
+    { num:396, code:"УПО-2729", title:"Школа І-ІІІ ст. с. Кислик",                                  desc:"",                                              note:"" },
+    { num:397, code:"УПО-2730", title:"Школа І-ІІІ ст. с. Губник",                                  desc:"",                                              note:"" },
+    { num:398, code:"УПО-2731", title:"ЗДО № 4 «Зірочка»",                                          desc:"",                                              note:"" },
+    { num:399, code:"УПО-2732", title:"ЗДО № 5 «Факел»",                                            desc:"",                                              note:"" },
+    { num:400, code:"УПО-2733", title:"ЗДО № 7 «Берізка»",                                          desc:"",                                              note:"" },
+    { num:401, code:"УПО-2734", title:"Школа І-ІІІ ст. с. Степашки",                               desc:"",                                              note:"" },
+    { num:402, code:"УПО-2735", title:"Школа І-ІІІ ст. с. Жерденівка",                             desc:"",                                              note:"" },
+    { num:403, code:"УПО-2736", title:"Школа І-ІІІ ст. с. Карбівка",                               desc:"",                                              note:"" },
+    { num:404, code:"УПО-2737", title:"Школа І-ІІІ ст. с. Бубнівка",                               desc:"",                                              note:"" },
+    { num:405, code:"УПО-2738", title:"ФОП Бабій І.С.",                                             desc:"м-н Gabix «Центр взуття та одягу»",             note:"" },
+    { num:406, code:"УПО-2739", title:"ФОП Гуліка Н.С.",                                            desc:"м-н «Крамниця солодощів»",                      note:"" },
+    { num:407, code:"УПО-2740", title:"КП «Гайсинводоканал»",                                       desc:"насосна",                                       note:"" },
+    { num:408, code:"УПО-2741", title:"КП «Гайсинводоканал»",                                       desc:"насосна",                                       note:"" },
+    { num:409, code:"УПО-2742", title:"КП «Гайсинводоканал»",                                       desc:"насосна",                                       note:"" },
+    { num:410, code:"УПО-2743", title:"КП «Гайсинводоканал»",                                       desc:"насосна",                                       note:"" },
+    { num:411, code:"УПО-2744", title:"КП «Гайсинводоканал»",                                       desc:"насосна",                                       note:"" },
+    { num:412, code:"УПО-2745", title:"КП «Гайсинводоканал»",                                       desc:"насосна",                                       note:"" },
+    { num:413, code:"УПО-2746", title:"КП «Гайсинводоканал»",                                       desc:"свердловина Б-2",                               note:"" },
+    { num:414, code:"УПО-2747", title:"КП «Гайсинводоканал»",                                       desc:"свердловина Б-3",                               note:"" },
+    { num:415, code:"УПО-2748", title:"КП «Гайсинводоканал»",                                       desc:"свердловина Б-4",                               note:"" },
+    { num:416, code:"УПО-2749", title:"КП «Гайсинводоканал»",                                       desc:"свердловина Б-8",                               note:"" },
+    { num:417, code:"УПО-2757", title:"КП «Гайсинводоканал»",                                       desc:"свердловина К-1",                               note:"" },
+    { num:418, code:"УПО-2758", title:"КП «Гайсинводоканал»",                                       desc:"свердловина К-6",                               note:"" },
+    { num:419, code:"УПО-2759", title:"КП «Гайсинводоканал»",                                       desc:"свердловина К-7",                               note:"" },
+    { num:420, code:"УПО-2760", title:"КП «Гайсинводоканал»",                                       desc:"свердловина К-8",                               note:"" },
+    { num:421, code:"УПО-2761", title:"КП «Гайсинводоканал»",                                       desc:"свердловина К-10",                              note:"" },
+    { num:422, code:"УПО-2762", title:"КП «Гайсинводоканал»",                                       desc:"насосна",                                       note:"" },
+    { num:423, code:"УПО-2763", title:"КП «Гайсинводоканал»",                                       desc:"насосна",                                       note:"" },
+    { num:424, code:"УПО-2764", title:"КП «Гайсинводоканал»",                                       desc:"насосна",                                       note:"" },
+    { num:425, code:"УПО-2765", title:"",                                                            desc:"",                                              note:"" },
+  ];
+
   const input      = document.getElementById('searchInput');
   const clearBtn   = document.getElementById('clearBtn');
   const listEl     = document.getElementById('cardList');
   const emptyState = document.getElementById('emptyState');
   const countEl    = document.getElementById('countDisplay');
   const totalLabel = document.getElementById('totalLabel');
-  const filterBtn  = document.getElementById('filterZnato');
-  const filterUpoBtn = document.getElementById('filterUpo');
+  const filterZnatoBtn  = document.getElementById('filterZnato');
+  const filterUpoBtn    = document.getElementById('filterUpo');
+  const filterGaisynBtn = document.getElementById('filterGaisyn');
 
-  let filterZnatoActive = false;
-  let filterUpoActive = false;
+  let filterZnato  = false;
+  let filterUpo    = false;
+  let filterGaisyn = false;
   let debounceTimer = null;
 
-  function escHtml(s) {
-    return String(s)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
+  const TOTAL = gaisyn.length + upo.length;
+  totalLabel.textContent = 'із ' + TOTAL;
 
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
   function hlText(text, q) {
     if (!q) return escHtml(text);
     const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
     return escHtml(text).replace(re, '<mark>$1</mark>');
   }
+  function isZnato(item) {
+    return item.note && item.note.toLowerCase().includes('знято');
+  }
 
-  function isZnato(item) { return item.status === 'Знято'; }
+  function matchItem(item, q) {
+    if (!q) return true;
+    return item.code.toLowerCase().includes(q) ||
+           item.title.toLowerCase().includes(q) ||
+           item.desc.toLowerCase().includes(q) ||
+           item.note.toLowerCase().includes(q);
+  }
 
-  function renderCards(query, onlyZnato, onlyUpo) {
+  function makeCard(item, q, isUpo) {
+    const znato = isZnato(item);
+    const classes = ['card'];
+    if (znato) classes.push('znято');
+    if (isUpo) classes.push('upo-card');
+
+    const statusHTML = znato
+      ? `<div class="card-status"><span class="badge-znято">Знято</span></div>`
+      : (item.note ? `<div class="card-status"><span class="badge-note">${escHtml(item.note)}</span></div>` : '');
+
+    const card = document.createElement('div');
+    card.className = classes.join(' ');
+    card.innerHTML = `
+      <div class="card-seq">${item.num}</div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-code${isUpo ? ' upo-code' : ''}">${hlText(item.code, q)}</span>
+          <span class="card-title">${hlText(item.title, q)}</span>
+        </div>
+        ${item.desc ? `<div class="card-desc">${hlText(item.desc, q)}</div>` : ''}
+      </div>
+      ${statusHTML}
+    `;
+    return card;
+  }
+
+  function renderCards(query) {
     const q = query.trim().toLowerCase();
     const fragment = document.createDocumentFragment();
     let visible = 0;
-    let firstHighlight = null;
 
-    data.forEach(item => {
-      const codeMatch  = item.code.toLowerCase().includes(q);
-      const titleMatch = item.title.toLowerCase().includes(q);
-      const descMatch  = item.description.toLowerCase().includes(q);
-      const statusMatch = item.status.toLowerCase().includes(q);
-      const matches    = !q || codeMatch || titleMatch || descMatch || statusMatch;
-      const passZnato  = !onlyZnato || isZnato(item);
-      const passUpo    = !onlyUpo || item.status === 'УПО';
-      if (!matches || !passZnato || !passUpo) return;
-      visible++;
+    const showGaisyn = !filterUpo;
+    const showUpo    = !filterGaisyn;
 
-      const znato = isZnato(item);
-      const isHighlighted = q && codeMatch && !firstHighlight;
+    if (showGaisyn) {
+      const filtered = gaisyn.filter(item => {
+        if (filterZnato && !isZnato(item)) return false;
+        return matchItem(item, q);
+      });
+      if (filtered.length > 0) {
+        const hdr = document.createElement('div');
+        hdr.className = 'section-header gaisyn';
+        hdr.innerHTML = `📋 Гайсин <span class="section-count">(${filtered.length})</span>`;
+        fragment.appendChild(hdr);
+        filtered.forEach(item => {
+          fragment.appendChild(makeCard(item, q, false));
+          visible++;
+        });
+      }
+    }
 
-      const card = document.createElement('div');
-      card.className = 'card' + (znato ? ' znято' : '') + (isHighlighted ? ' highlighted' : '');
-
-      if (isHighlighted) firstHighlight = card;
-
-      const statusHTML = znato
-        ? `<div class="card-status"><span class="badge-znято">Знято</span></div>`
-        : (item.status
-            ? `<div class="card-status"><span class="badge-note">${escHtml(item.status)}</span></div>`
-            : '');
-
-      card.innerHTML = `
-        <div class="card-seq">${item.id_num}</div>
-        <div class="card-body">
-          <div class="card-top">
-            <span class="card-code">${hlText(item.code, q)}</span>
-            <span class="card-title">${hlText(item.title, q)}</span>
-          </div>
-          ${item.description ? `<div class="card-desc">${hlText(item.description, q)}</div>` : ''}
-        </div>
-        ${statusHTML}
-      `;
-      fragment.appendChild(card);
-    });
+    if (showUpo) {
+      const filtered = upo.filter(item => {
+        if (filterZnato && !isZnato(item)) return false;
+        return matchItem(item, q);
+      });
+      if (filtered.length > 0) {
+        const hdr = document.createElement('div');
+        hdr.className = 'section-header upo';
+        hdr.innerHTML = `⭐ УПО <span class="section-count">(${filtered.length})</span>`;
+        fragment.appendChild(hdr);
+        filtered.forEach(item => {
+          fragment.appendChild(makeCard(item, q, true));
+          visible++;
+        });
+      }
+    }
 
     listEl.innerHTML = '';
     listEl.appendChild(fragment);
-
     countEl.textContent = visible;
     const empty = visible === 0;
     emptyState.style.display = empty ? 'block' : 'none';
     listEl.style.display = empty ? 'none' : 'flex';
-
-    if (firstHighlight) {
-      requestAnimationFrame(() =>
-        firstHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      );
-    }
   }
 
   input.addEventListener('input', () => {
     clearBtn.style.display = input.value ? 'block' : 'none';
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => renderCards(input.value, filterZnatoActive, filterUpoActive), 80);
+    debounceTimer = setTimeout(() => renderCards(input.value), 80);
   });
-
   clearBtn.addEventListener('click', () => {
     input.value = '';
     clearBtn.style.display = 'none';
-    renderCards('', filterZnatoActive, filterUpoActive);
+    renderCards('');
     input.focus();
   });
-
-  filterBtn.addEventListener('click', () => {
-    filterZnatoActive = !filterZnatoActive;
-    filterBtn.classList.toggle('active', filterZnatoActive);
-    filterBtn.textContent = filterZnatoActive ? '✕ Скасувати' : 'Тільки «Знято»';
-    renderCards(input.value, filterZnatoActive, filterUpoActive);
+  filterZnatoBtn.addEventListener('click', () => {
+    filterZnato = !filterZnato;
+    filterZnatoBtn.classList.toggle('active-znato', filterZnato);
+    filterZnatoBtn.textContent = filterZnato ? '✕ Знято' : 'Тільки «Знято»';
+    renderCards(input.value);
   });
-
   filterUpoBtn.addEventListener('click', () => {
-    filterUpoActive = !filterUpoActive;
-    filterUpoBtn.classList.toggle('active', filterUpoActive);
-    filterUpoBtn.textContent = filterUpoActive ? '✕ УПО' : 'УПО';
-    renderCards(input.value, filterZnatoActive, filterUpoActive);
+    filterUpo = !filterUpo;
+    if (filterUpo) filterGaisyn = false;
+    filterUpoBtn.classList.toggle('active-upo', filterUpo);
+    filterGaisynBtn.classList.remove('active-upo');
+    filterUpoBtn.textContent = filterUpo ? '✕ УПО' : 'Тільки УПО';
+    filterGaisynBtn.textContent = 'Тільки Гайсин';
+    renderCards(input.value);
+  });
+  filterGaisynBtn.addEventListener('click', () => {
+    filterGaisyn = !filterGaisyn;
+    if (filterGaisyn) filterUpo = false;
+    filterGaisynBtn.classList.toggle('active-upo', filterGaisyn);
+    filterUpoBtn.classList.remove('active-upo');
+    filterGaisynBtn.textContent = filterGaisyn ? '✕ Гайсин' : 'Тільки Гайсин';
+    filterUpoBtn.textContent = 'Тільки УПО';
+    renderCards(input.value);
   });
 
-  totalLabel.textContent = 'із ' + TOTAL;
-  countEl.textContent = TOTAL;
-  renderCards('', false, false);
+  renderCards('');
   </script>
 </body>
 </html>
