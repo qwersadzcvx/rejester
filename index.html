@@ -1077,17 +1077,17 @@
     const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
     return escHtml(text).replace(re, '<mark>$1</mark>');
   }
-  function isZnato(item) {
-    return item.note && item.note.toLowerCase().includes('знято');
-  }
+ function isZnato(item) {
+  return !!(item.note && item.note.toLowerCase().includes('знято'));
+}
 
-  function matchItem(item, q) {
-    if (!q) return true;
-    return item.code.toLowerCase().includes(q) ||
-           item.title.toLowerCase().includes(q) ||
-           item.desc.toLowerCase().includes(q) ||
-           item.note.toLowerCase().includes(q);
-  }
+function matchItem(item, q) {
+  if (!q) return true;
+  return (item.code  || '').toLowerCase().includes(q) ||
+         (item.title || '').toLowerCase().includes(q) ||
+         (item.desc  || '').toLowerCase().includes(q) ||
+         (item.note  || '').toLowerCase().includes(q);
+}
 
   function makeCard(item, q, isUpo) {
     const znato = isZnato(item);
